@@ -169,18 +169,21 @@ class Component(CommonInterface):
         if endpoint == 'create_contact':
 
             headers = list(data_in.columns)
+            logging.info(f'HEADERS: {headers}')
             for index, user in data_in.iterrows():
 
                 request_body = {
                     'properties': []
                 }
 
+                logging.info(f'REQUEST_BODY: {request_body}')
+
                 for i in headers:
 
                     if not pd.isnull(user[i]):
                         tmp = {
                             'property': i,
-                            'value': user[i]
+                            'value': str(user[i])
                         }
                         request_body['properties'].append(tmp)
 
@@ -199,7 +202,7 @@ class Component(CommonInterface):
             for index, contact_list in data_in.iterrows():
 
                 request_body = {
-                    'name': contact_list['name']
+                    'name': str(contact_list['name'])
                 }
 
                 # Requests handler
