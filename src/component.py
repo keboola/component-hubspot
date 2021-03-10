@@ -8,9 +8,9 @@ import sys
 from pathlib import Path
 import json
 import pandas as pd
+import requests
 
 from keboola.component import CommonInterface
-from keboola.http_client import HttpClient
 
 # configuration variables
 KEY_API_TOKEN = '#api_token'
@@ -36,11 +36,11 @@ ENDPOINT_MAPPING = {
     },
     'add_contact_to_list': {
         'endpoint': 'lists/{list_id}/add',
-        'required_column': ['vids', 'emails']
+        'required_column': ['list_id', 'vids', 'emails']
     },
-    'remove_contact': {
+    'remove_contact_from_list': {
         'endpoint': 'lists/{list_id}/remove',
-        'required_column': ['vids']
+        'required_column': ['list_id', 'vids']
     }
 }
 
@@ -64,8 +64,9 @@ class Component(CommonInterface):
         data_folder_path = get_data_folder_path()
         super().__init__(data_folder_path=data_folder_path)
 
+        debug = self.configuration.parameters.get(KEY_DEBUG)
         # override debug from config
-        if self.configuration.parameters[KEY_DEBUG]:
+        if debug:
             debug = True
         else:
             debug = False
@@ -98,23 +99,23 @@ class Component(CommonInterface):
         self.validate_user_input(params, in_tables)
 
         # Base parameters for the requests
-        base_url = 'https://api.hubapi.com/contacts/v1/'
-        base_params = {
-            'hapikey': api_token,
+        self.base_url = 'https://api.hubapi.com/contacts/v1/'
+        self.base_headers = {
+            'Content-Type': 'application/json'
         }
-
-        hubspot_request = HttpClient(
-            base_url=base_url, default_params=base_params)
+        self.base_params = {
+            'hapikey': api_token
+        }
 
         # Looping all the input tables
         for table in in_tables:
 
-            logging.info(f'Processing input table: {table}')
+            logging.info(f'Processing input table: {table["destination"]}')
 
             for data_in in pd.read_csv(f'{self.tables_in_path}/{table["destination"]}', chunksize=500):
 
                 self._construct_request_body(
-                    endpoint, hubspot_request, data_in)
+                    endpoint, data_in)
 
     def validate_user_input(self, params, in_tables):
 
@@ -163,7 +164,7 @@ class Component(CommonInterface):
                     f'Missing columns in input table [{table["destination"]}]: {missing_columns}')
                 sys.exit(1)
 
-    def _construct_request_body(self, endpoint, hubspot_request, data_in):
+    def _construct_request_body(self, endpoint, data_in):
 
         if endpoint == 'create_contact':
 
@@ -183,11 +184,15 @@ class Component(CommonInterface):
                         }
                         request_body['properties'].append(tmp)
 
-                response = hubspot_request.post(
-                    endpoint_path=ENDPOINT_MAPPING[endpoint]['endpoint'], data=request_body)
+                # Requests handler
+                response = requests.post(
+                    f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}', headers=self.base_headers,
+                    params=self.base_params, json=request_body)
 
-                logging.info(
-                    f'Status - [{response.status_code()}]; User Properties -  {request_body}')
+                if response.status_code not in (200, 201):
+                    response_json = response.json()
+                    logging.info(
+                        f'[{response.status_code}] - {response_json["message"]} - {request_body["properties"]}')
 
         elif endpoint == 'create_list':
 
@@ -197,16 +202,23 @@ class Component(CommonInterface):
                     'name': contact_list['name']
                 }
 
-                response = hubspot_request.post(
-                    endpoint_path=ENDPOINT_MAPPING[endpoint]['endpoint'], data=request_body)
+                # Requests handler
+                response = requests.post(
+                    f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}', headers=self.base_headers,
+                    params=self.base_params, json=request_body)
 
-                logging.info(
-                    f'Status - [{response.status_code}]; Contact list - {request_body["name"]}')
+                if response.status_code not in (200, 201):
+                    response_json = response.json()
+                    logging.info(
+                        f'[{response.status_code}] - {response_json["message"]} - {contact_list["name"]}')
 
         elif endpoint == 'add_contact_to_list':
 
             # distinct list_ids
             distinct_list_id = data_in['list_id'].unique().tolist()
+
+            # Grouping requests by list_id
+            data_in_by_list_id = data_in.groupby('list_id')
 
             for list_id in distinct_list_id:
 
@@ -215,15 +227,15 @@ class Component(CommonInterface):
                     logging.error('Column [list_id] cannot be empty')
                     sys.exit(1)
 
-                # Grouping requests by the list_id
-                list_id_sorted = data_in.get_group(list_id)
+                # Fetching datagroup belong to the list_id
+                list_id_sorted = data_in_by_list_id.get_group(list_id)
 
                 # Checking available headers
                 header = list(list_id_sorted.columns)
 
                 # Request parameters
                 endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
-                    '{list_id}', list_id)
+                    '{list_id}', str(list_id))
                 request_body = {
                     'vids': [],
                     'emails': []
@@ -232,24 +244,34 @@ class Component(CommonInterface):
                 # Constructing request body
                 for index, row in list_id_sorted.iterrows():
 
+                    # Always prioritize pushing VIDS than emails
+                    added_bool = False
                     if 'vids' in header:
                         if not pd.isnull(row['vids']):
-                            request_body.append(row['vids'])
+                            request_body['vids'].append(str(row['vids']))
+                        added_bool = True
 
-                    if 'emails' in header:
+                    if 'emails' in header and not added_bool:
                         if not pd.isnull(row['emails']):
-                            request_body.append(row['emails'])
+                            request_body['emails'].append(str(row['emails']))
 
-                response = hubspot_request.post(
-                    endpoint_path=endpoint_url, data=request_body)
+                # Requests handler
+                response = requests.post(
+                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
+                    params=self.base_params, json=request_body)
 
-                logging.info(
-                    f'Status - [{response.status_code}]; Request Body - {request_body}')
+                if response.status_code not in (200, 201):
+                    response_json = response.json()
+                    logging.info(
+                        f'[{response.status_code}] - {response_json["message"]}')
 
-        elif endpoint == 'remove_contact':
+        elif endpoint == 'remove_contact_from_list':
 
             # distinct list_ids
             distinct_list_id = data_in['list_id'].unique().tolist()
+
+            # Grouping requests by list_id
+            data_in_by_list_id = data_in.groupby('list_id')
 
             for list_id in distinct_list_id:
 
@@ -259,14 +281,14 @@ class Component(CommonInterface):
                     sys.exit(1)
 
                 # Grouping requests by the list_id
-                list_id_sorted = data_in.get_group(list_id)
+                list_id_sorted = data_in_by_list_id.get_group(list_id)
 
                 # Checking available headers
                 header = list(list_id_sorted.columns)
 
                 # Request parameters
                 endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
-                    '{list_id}', list_id)
+                    '{list_id}', str(list_id))
                 request_body = {
                     'vids': []
                 }
@@ -276,13 +298,17 @@ class Component(CommonInterface):
 
                     if 'vids' in header:
                         if not pd.isnull(row['vids']):
-                            request_body.append(row['vids'])
+                            request_body['vids'].append(str(row['vids']))
 
-                response = hubspot_request.post(
-                    endpoint_path=endpoint_url, data=request_body)
+                # Requests handler
+                response = requests.post(
+                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
+                    params=self.base_params, json=request_body)
 
-                logging.info(
-                    f'Status - [{response.status_code}]; Removing Contacts - {request_body}')
+                if response.status_code not in (200, 201):
+                    response_json = response.json()
+                    logging.info(
+                        f'[{response.status_code}] - {response_json["message"]}')
 
 
 """
