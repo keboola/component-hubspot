@@ -67,6 +67,8 @@ class Component(CommonInterface):
         # override debug from config
         if self.configuration.parameters[KEY_DEBUG]:
             debug = True
+        else:
+            debug = False
         if debug:
             logging.getLogger().setLevel(logging.DEBUG)
             logging.info('Running version %s', APP_VERSION)
