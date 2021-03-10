@@ -176,9 +176,11 @@ class Component(CommonInterface):
                         }
                         request_body['properties'].append(tmp)
 
-                logging.info(f'User Properties: {request_body}')
                 response = hubspot_request.post(
                     endpoint_path=ENDPOINT_MAPPING[endpoint]['endpoint'], data=request_body)
+
+                logging.info(
+                    f'Status - [{response.status_code()}]; User Properties -  {request_body}')
 
         elif endpoint == 'create_list':
 
@@ -188,9 +190,11 @@ class Component(CommonInterface):
                     'name': contact_list['name']
                 }
 
-                logging.info(f'Contact List: {request_body["name"]}')
                 response = hubspot_request.post(
                     endpoint_path=ENDPOINT_MAPPING[endpoint]['endpoint'], data=request_body)
+
+                logging.info(
+                    f'Status - [{response.status_code}]; Contact list - {request_body["name"]}')
 
         elif endpoint == 'add_contact_to_list':
 
@@ -229,9 +233,11 @@ class Component(CommonInterface):
                         if not pd.isnull(row['emails']):
                             request_body.append(row['emails'])
 
-                logging.info(f'Request Body: {request_body}')
                 response = hubspot_request.post(
                     endpoint_path=endpoint_url, data=request_body)
+
+                logging.info(
+                    f'Status - [{response.status_code}]; Request Body - {request_body}')
 
         elif endpoint == 'remove_contact':
 
@@ -265,9 +271,11 @@ class Component(CommonInterface):
                         if not pd.isnull(row['vids']):
                             request_body.append(row['vids'])
 
-                logging.info(f'Removing Contacts: {request_body}')
                 response = hubspot_request.post(
                     endpoint_path=endpoint_url, data=request_body)
+
+                logging.info(
+                    f'Status - [{response.status_code}]; Removing Contacts - {request_body}')
 
 
 """
