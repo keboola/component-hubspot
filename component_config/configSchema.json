@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "title": "extractor configuration",
+  "required": [
+    "apikey",
+    "endpoint"
+  ],
+  "properties": {
+    "apikey": {
+      "type": "string",
+      "title": "API Key",
+      "propertyOrder": 100
+    },
+    "endpoint": {
+      "enum": [
+        "create_contact",
+        "create_list",
+        "add_contact_to_list",
+        "remove_contact"
+      ],
+      "type": "string",
+      "title": "Endpoint",
+      "propertyOrder": 200
+    }
+  }
+}
