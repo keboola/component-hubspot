@@ -134,7 +134,7 @@ class Component(CommonInterface):
 
         # 4 - Ensure there are input files
         if len(in_tables) < 1:
-            logging.error(f'Input tables are missing.')
+            logging.error('Input tables are missing.')
             sys.exit(1)
 
         # 5 - Ensure all required columns are in the input files
