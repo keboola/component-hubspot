@@ -2,11 +2,11 @@
   "type": "object",
   "title": "extractor configuration",
   "required": [
-    "apikey",
+    "#api_token",
     "endpoint"
   ],
   "properties": {
-    "apikey": {
+    "#api_token": {
       "type": "string",
       "title": "API Key",
       "propertyOrder": 100

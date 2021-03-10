@@ -132,7 +132,12 @@ class Component(CommonInterface):
                 f'{params.get(KEY_ENDPOINT)} is not a valid endpoint.')
             sys.exit(1)
 
-        # 4 - Ensure all required columns are in the input files
+        # 4 - Ensure there are input files
+        if len(in_tables) < 1:
+            logging.error(f'Input tables are missing.')
+            sys.exit(1)
+
+        # 5 - Ensure all required columns are in the input files
         # for the respective endpoint.
         # Comparing this information with the file's manifest
         required_columns = ENDPOINT_MAPPING[params.get(
