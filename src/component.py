@@ -93,9 +93,7 @@ class Component(CommonInterface):
         logging.info(f'Selected Endpoint: [{endpoint}]')
 
         # Input tables
-        logging.info('BEFORE: in_table')
         in_tables = self.configuration.tables_input_mapping
-        logging.info(in_tables)
 
         # Validate user inputs
         self.validate_user_input(params, in_tables)
@@ -114,7 +112,7 @@ class Component(CommonInterface):
 
             logging.info(f'Processing input table: {table["destination"]}')
 
-            for data_in in pd.read_csv(f'{self.tables_in_path}/{table["destination"]}', chunksize=500):
+            for data_in in pd.read_csv(f'{self.tables_in_path}/{table["destination"]}', chunksize=500, dtype=str):
 
                 self._construct_request_body(
                     endpoint, data_in)
@@ -122,25 +120,21 @@ class Component(CommonInterface):
     def validate_user_input(self, params, in_tables):
 
         # 1 - Ensure there is a configuration
-        logging.info('RULE 1')
         if params == {}:
             logging.error('Empty configuration. Please configure your writer.')
             sys.exit(1)
 
-        logging.info('RULE 2')
         # 2 - Ensure API token is entered
         if params.get(KEY_API_TOKEN) == '':
             logging.error('API token is missing.')
             sys.exit(1)
 
-        logging.info('RULE 3')
         # 3 - Ensure an endpoint is selected and valid
         if params.get(KEY_ENDPOINT) not in ENDPOINT_MAPPING:
             logging.error(
                 f'{params.get(KEY_ENDPOINT)} is not a valid endpoint.')
             sys.exit(1)
 
-        logging.info('RULE 4')
         # 4 - Ensure there are input files
         if len(in_tables) < 1:
             logging.error('Input tables are missing.')
@@ -149,12 +143,10 @@ class Component(CommonInterface):
         # 5 - Ensure all required columns are in the input files
         # for the respective endpoint.
         # Comparing this information with the file's manifest
-        logging.info('RULE 5')
         required_columns = ENDPOINT_MAPPING[params.get(
             KEY_ENDPOINT)]['required_column']
 
         for table in in_tables:
-            logging.info('RULE 5 first LOOP')
 
             with open(f'{self.tables_in_path}/{table["destination"]}.manifest', 'r') as f:
                 table_manifest = json.load(f)
@@ -164,7 +156,6 @@ class Component(CommonInterface):
             missing_columns = []
 
             for r in required_columns:
-                logging.info('RULE 5 2ND LOOP')
 
                 if r not in table_columns:
                     missing_columns.append(r)
@@ -179,14 +170,12 @@ class Component(CommonInterface):
         if endpoint == 'create_contact':
 
             headers = list(data_in.columns)
-            logging.info(f'HEADERS: {headers}')
+
             for index, user in data_in.iterrows():
 
                 request_body = {
                     'properties': []
                 }
-
-                logging.info(f'REQUEST_BODY: {request_body}')
 
                 for i in headers:
 
