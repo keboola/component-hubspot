@@ -93,6 +93,7 @@ class Component(CommonInterface):
         logging.info(f'Selected Endpoint: [{endpoint}]')
 
         # Input tables
+        logging.info('BEFORE: in_table')
         in_tables = self.configuration.tables_input_mapping
         logging.info(in_tables)
 
