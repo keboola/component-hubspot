@@ -1,1 +1,1 @@
-Testing functional sample extractor for purposes of the python component template. 
+The HubSpot CRM helps companies grow traffic, convert leads, get insights to close more deals, etc

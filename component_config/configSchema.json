@@ -20,7 +20,15 @@
       ],
       "type": "string",
       "title": "Endpoint",
-      "propertyOrder": 200
+      "propertyOrder": 200,
+      "options": {
+        "enum_titles": [
+          "Create Contact",
+          "Create List",
+          "Add Contact to List",
+          "Remove Contact from List"
+        ]
+      }
     }
   }
 }
