@@ -151,7 +151,6 @@ class Component(CommonInterface):
             with open(f'{self.tables_in_path}/{table["destination"]}.manifest', 'r') as f:
                 table_manifest = json.load(f)
 
-            logging.info(table_manifest)
             table_columns = table_manifest['columns']
             missing_columns = []
 
@@ -194,7 +193,7 @@ class Component(CommonInterface):
                 if response.status_code not in (200, 201):
                     response_json = response.json()
                     logging.info(
-                        f'[{response.status_code}] - {response_json["message"]} - {request_body["properties"]}')
+                        f'{response_json["message"]} - {request_body["properties"]}')
 
         elif endpoint == 'create_list':
 
@@ -212,7 +211,7 @@ class Component(CommonInterface):
                 if response.status_code not in (200, 201):
                     response_json = response.json()
                     logging.info(
-                        f'[{response.status_code}] - {response_json["message"]} - {contact_list["name"]}')
+                        f'{response_json["message"]} - {contact_list["name"]}')
 
         elif endpoint == 'add_contact_to_list':
 
@@ -265,7 +264,7 @@ class Component(CommonInterface):
                 if response.status_code not in (200, 201):
                     response_json = response.json()
                     logging.info(
-                        f'[{response.status_code}] - {response_json["message"]}')
+                        f'{response_json["message"]}')
 
         elif endpoint == 'remove_contact_from_list':
 
@@ -310,7 +309,7 @@ class Component(CommonInterface):
                 if response.status_code not in (200, 201):
                     response_json = response.json()
                     logging.info(
-                        f'[{response.status_code}] - {response_json["message"]}')
+                        f'{response_json["message"]}')
 
 
 """
