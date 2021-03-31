@@ -180,8 +180,9 @@ class Component(CommonInterface):
                 sys.exit(1)
 
             else:
-                logging.error(
-                    f'Unexpected error. Please contact support - [{auth_test.status_code}] - {auth_test.json()["message"]}')
+                err_msg = 'Unexpected error. Please contact support - [{0}] - {1}'.format(
+                    auth_test.status_code, auth_test.json()["message"])
+                logging.error(err_msg)
                 sys.exit(1)
 
     def _construct_request_body(self, endpoint, data_in):
