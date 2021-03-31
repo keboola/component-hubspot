@@ -44,7 +44,7 @@ ENDPOINT_MAPPING = {
     }
 }
 
-APP_VERSION = '0.0.1'
+APP_VERSION = '0.0.2'
 
 
 def get_local_data_path():
