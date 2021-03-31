@@ -164,6 +164,26 @@ class Component(CommonInterface):
                     f'Missing columns in input table [{table["destination"]}]: {missing_columns}')
                 sys.exit(1)
 
+        # 6 - Authentication Check to ensure the API token is valid
+        auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
+        auth_param = {
+            'count': 1,
+            'hapikey': params.get(KEY_API_TOKEN)
+        }
+
+        auth_test = requests.get(auth_url, params=auth_param)
+        if auth_test.status_code not in (200, 201):
+            expected_error_msg = f'This hapikey ({params.get(KEY_API_TOKEN)}) doesn\'t exist.'
+            if auth_test.json()['message'] == expected_error_msg:
+                logging.error(
+                    'Authentication Error. Please check your API token.')
+                sys.exit(1)
+
+            else:
+                logging.error(
+                    f'Unexpected error. Please contact support - [{auth_test.status_code}] - {auth_test.json()["message"]}')
+                sys.exit(1)
+
     def _construct_request_body(self, endpoint, data_in):
 
         if endpoint == 'create_contact':
