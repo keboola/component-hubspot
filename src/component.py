@@ -41,10 +41,18 @@ ENDPOINT_MAPPING = {
     'remove_contact_from_list': {
         'endpoint': 'lists/{list_id}/remove',
         'required_column': ['list_id', 'vids']
+    },
+    'update_contact': {
+        'endpoint': 'contact/vid/{vid}/profile',
+        'required_column': ['vid']
+    },
+    'update_contact_by_email': {
+        'endpoint': 'contact/email/{email}/profile',
+        'required_column': ['email']
     }
 }
 
-APP_VERSION = '0.0.2'
+APP_VERSION = '0.0.3'
 
 
 def get_local_data_path():
@@ -114,6 +122,7 @@ class Component(CommonInterface):
 
             for data_in in pd.read_csv(f'{self.tables_in_path}/{table["destination"]}', chunksize=500, dtype=str):
 
+                # Construct endpoint body & post request
                 self._construct_request_body(
                     endpoint, data_in)
 
@@ -232,7 +241,7 @@ class Component(CommonInterface):
                 if response.status_code not in (200, 201):
                     response_json = response.json()
                     logging.info(
-                        f'{response_json["message"]} - {contact_list["name"]}')
+                        f'{contact_list["name"]} - {response_json["message"]}')
 
         elif endpoint == 'add_contact_to_list':
 
@@ -321,6 +330,48 @@ class Component(CommonInterface):
                     if 'vids' in header:
                         if not pd.isnull(row['vids']):
                             request_body['vids'].append(str(row['vids']))
+
+                # Requests handler
+                response = requests.post(
+                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
+                    params=self.base_params, json=request_body)
+
+                if response.status_code not in (200, 201):
+                    response_json = response.json()
+                    logging.info(
+                        f'{response_json["message"]}')
+
+        elif endpoint == 'update_contact' or endpoint == 'update_contact_by_email':
+
+            wildcard = 'vid' if endpoint == 'update_contact' else 'email'
+
+            headers = list(data_in.columns)
+            headers.remove(wildcard)
+
+            for index, row in data_in.iterrows():
+
+                logging.info(f'Updating contact [{row[wildcard]}]')
+
+                if row[wildcard] == '' or pd.isnull(row[wildcard]):
+                    logging.error(row)
+                    logging.error(f'[{wildcard}] cannot be empty.')
+                    continue
+
+                request_body = {
+                    'properties': []
+                }
+
+                # Request parameters
+                endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
+                    f'{{{wildcard}}}', str(row[wildcard]))
+
+                for h in headers:
+                    temp_json = {
+                        'property': h,
+                        'value': row[h] if not pd.isnull(row[h]) else ''
+                    }
+
+                    request_body['properties'].append(temp_json)
 
                 # Requests handler
                 response = requests.post(
