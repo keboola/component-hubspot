@@ -2,4 +2,4 @@ mock
 freezegun
 keboola.component==1.0.3
 keboola.http-client
-pandas
+pandas==1.2.2
