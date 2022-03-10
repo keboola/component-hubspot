@@ -378,7 +378,7 @@ class Component(CommonInterface):
                     f'{self.base_url}{endpoint_url}', headers=self.base_headers,
                     params=self.base_params, json=request_body)
 
-                if response.status_code not in (200, 201):
+                if response.status_code not in (204):
                     response_json = response.json()
                     logging.info(
                         f'{response_json["message"]}')
