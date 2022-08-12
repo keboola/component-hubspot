@@ -164,10 +164,10 @@ class Component(ComponentBase):
         if response.status_code not in (200, 201):
             response_json = response.json()
             try:
-                logging.info(
+                logging.error(
                     f'{response_json["message"]} - {request_body["properties"]}')
             except KeyError:
-                logging.info(response_json["message"])
+                logging.error(response_json["message"])
 
     def _construct_request_body(self, endpoint, data_in):
 
