@@ -86,24 +86,19 @@ class Component(ComponentBase):
 
         # 1 - Ensure there is a configuration
         if self.params == {}:
-            logging.error('Empty configuration. Please configure your writer.')
-            sys.exit(1)
+            raise Exception('Empty configuration. Please configure your writer.')
 
         # 2 - Ensure API token is entered
         if self.params.get(KEY_API_TOKEN) == '':
-            logging.error('API token is missing.')
-            sys.exit(1)
+            raise Exception('API token is missing.')
 
         # 3 - Ensure an endpoint is selected and valid
         if self.params.get(KEY_ENDPOINT) not in ENDPOINT_MAPPING:
-            logging.error(
-                f'{self.params.get(KEY_ENDPOINT)} is not a valid endpoint.')
-            sys.exit(1)
+            raise Exception(f'{self.params.get(KEY_ENDPOINT)} is not a valid endpoint.')
 
         # 4 - Ensure there are input files
         if len(in_tables) < 1:
-            logging.error('Input tables are missing.')
-            sys.exit(1)
+            raise Exception('Input tables are missing.')
 
         # 5 - Ensure all required columns are in the input files
         # for the respective endpoint.
@@ -121,9 +116,7 @@ class Component(ComponentBase):
                 if r not in table_columns:
                     missing_columns.append(r)
             if missing_columns:
-                logging.error(
-                    f'Missing columns in input table [{table["destination"]}]: {missing_columns}')
-                sys.exit(1)
+                raise Exception(f'Missing columns in input table [{table["destination"]}]: {missing_columns}')
 
         # 6 - Authentication Check to ensure the API token is valid
         auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
@@ -136,15 +129,12 @@ class Component(ComponentBase):
         if auth_test.status_code not in (200, 201):
             expected_error_msg = f'This hapikey ({self.params.get(KEY_API_TOKEN)}) does not exist.'
             if auth_test.json()['message'] == expected_error_msg:
-                logging.error(
-                    'Authentication Error. Please check your API token.')
-                sys.exit(1)
+                raise Exception('Authentication Error. Please check your API token.')
 
             else:
                 err_msg = 'Unexpected error. Please contact support - [{0}] - {1}'.format(
                     auth_test.status_code, auth_test.json()["message"])
-                logging.error(err_msg)
-                sys.exit(1)
+                raise Exception(err_msg)
 
     def make_post(self, url, request_body):
         """
@@ -223,8 +213,7 @@ class Component(ComponentBase):
 
                 if list_id == "":
                     # Ensuring all list_id inputs are not empty
-                    logging.error("Column [list_id] cannot be empty")
-                    sys.exit(1)
+                    raise Exception("Column [list_id] cannot be empty")
 
                 temp_list_of_dicts = ([x for x in ordered_dict if x["list_id"] == list_id])
                 for dic in temp_list_of_dicts:
@@ -258,8 +247,7 @@ class Component(ComponentBase):
 
                 if list_id == '':
                     # Ensuring all list_id inputs are not empty
-                    logging.error('Column [list_id] cannot be empty')
-                    sys.exit(1)
+                    raise Exception('Column [list_id] cannot be empty')
 
                 # Grouping requests by the list_id
                 list_id_sorted = data_in_by_list_id.get_group(list_id)
@@ -276,7 +264,6 @@ class Component(ComponentBase):
 
                 # Constructing request body
                 for index, row in list_id_sorted.iterrows():
-
                     if 'vids' in header:
                         if not pd.isnull(row['vids']):
                             request_body['vids'].append(str(row['vids']))
