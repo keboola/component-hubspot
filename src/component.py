@@ -11,7 +11,7 @@ import csv
 
 from keboola.component.base import ComponentBase
 
-from requests.packages.urllib3.util import Retry
+from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
 from requests import Session
 from endpoint_mapping import ENDPOINT_MAPPING
