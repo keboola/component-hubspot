@@ -14,46 +14,17 @@ from keboola.component.base import ComponentBase
 from requests.packages.urllib3.util import Retry
 from requests.adapters import HTTPAdapter
 from requests import Session
+from endpoint_mapping import ENDPOINT_MAPPING
 
 # configuration variables
 KEY_API_TOKEN = '#api_token'
 KEY_ENDPOINT = 'endpoint'
-
-# #### Keep for debug
 KEY_DEBUG = 'debug'
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
 REQUIRED_PARAMETERS = []
 REQUIRED_IMAGE_PARS = []
-
-# Request Mapping
-ENDPOINT_MAPPING = {
-    'create_contact': {
-        'endpoint': 'contact',
-        'required_column': []
-    },
-    'create_list': {
-        'endpoint': 'lists',
-        'required_column': ['name']
-    },
-    'add_contact_to_list': {
-        'endpoint': 'lists/{list_id}/add',
-        'required_column': ['list_id', 'vids', 'emails']
-    },
-    'remove_contact_from_list': {
-        'endpoint': 'lists/{list_id}/remove',
-        'required_column': ['list_id', 'vids']
-    },
-    'update_contact': {
-        'endpoint': 'contact/vid/{vid}/profile',
-        'required_column': ['vid']
-    },
-    'update_contact_by_email': {
-        'endpoint': 'contact/email/{email}/profile',
-        'required_column': ['email']
-    }
-}
 
 
 class Component(ComponentBase):
