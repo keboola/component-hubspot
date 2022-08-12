@@ -3,7 +3,6 @@ Hubspot Writer
 
 '''
 import logging
-import sys
 import json
 import pandas as pd
 import requests
