@@ -3,14 +3,17 @@ Hubspot Writer
 
 '''
 import logging
-import os
 import sys
-from pathlib import Path
 import json
 import pandas as pd
 import requests
+import csv
 
-from keboola.component import CommonInterface
+from keboola.component.base import ComponentBase
+
+from requests.packages.urllib3.util import Retry
+from requests.adapters import HTTPAdapter
+from requests import Session
 
 # configuration variables
 KEY_API_TOKEN = '#api_token'
@@ -52,59 +55,18 @@ ENDPOINT_MAPPING = {
     }
 }
 
-APP_VERSION = '0.0.3'
 
+class Component(ComponentBase):
+    def __init__(self):
+        super().__init__()
 
-def get_local_data_path():
-    return Path(__file__).resolve().parent.parent.joinpath('data').as_posix()
-
-
-def get_data_folder_path():
-    data_folder_path = None
-    if not os.environ.get('KBC_DATADIR'):
-        data_folder_path = get_local_data_path()
-    return data_folder_path
-
-
-class Component(CommonInterface):
-    def __init__(self, debug=False):
-        # for easier local project setup
-        data_folder_path = get_data_folder_path()
-        super().__init__(data_folder_path=data_folder_path)
-
-        debug = self.configuration.parameters.get(KEY_DEBUG)
-        # override debug from config
-        if debug:
-            debug = True
-        else:
-            debug = False
-        if debug:
+        if self.configuration.parameters.get(KEY_DEBUG):
             logging.getLogger().setLevel(logging.DEBUG)
-            logging.info('Running version %s', APP_VERSION)
             logging.info('Loading configuration...')
 
-        try:
-            # validation of required parameters. Produces ValueError
-            self.validate_configuration(REQUIRED_PARAMETERS)
-            self.validate_image_parameters(REQUIRED_IMAGE_PARS)
-        except ValueError as e:
-            logging.exception(e)
-            exit(1)
-
-    def run(self):
-        '''
-        Main execution code
-        '''
-        params = self.configuration.parameters
-        endpoint = params.get(KEY_ENDPOINT)
-        api_token = params.get(KEY_API_TOKEN)
-        logging.info(f'Selected Endpoint: [{endpoint}]')
-
-        # Input tables
-        in_tables = self.configuration.tables_input_mapping
-
-        # Validate user inputs
-        self.validate_user_input(params, in_tables)
+        self.validate_configuration_parameters(REQUIRED_PARAMETERS)
+        self.params = self.configuration.parameters
+        api_token = self.params.get(KEY_API_TOKEN)
 
         # Base parameters for the requests
         self.base_url = 'https://api.hubapi.com/contacts/v1/'
@@ -115,33 +77,56 @@ class Component(CommonInterface):
             'hapikey': api_token
         }
 
+    def run(self):
+        """
+        Main execution code
+        """
+
+        endpoint = self.params.get(KEY_ENDPOINT)
+
+        logging.info(f"Selected Endpoint: [{endpoint}]")
+
+        # Input tables
+        in_tables = self.configuration.tables_input_mapping
+
+        # Validate user inputs
+        self.validate_user_input(in_tables)
+
         # Looping all the input tables
         for table in in_tables:
-
             logging.info(f'Processing input table: {table["destination"]}')
-
-            for data_in in pd.read_csv(f'{self.tables_in_path}/{table["destination"]}', chunksize=500, dtype=str):
-
+            with open(f'{self.tables_in_path}/{table["destination"]}') as csvfile:
+                reader = csv.DictReader(csvfile)
                 # Construct endpoint body & post request
-                self._construct_request_body(
-                    endpoint, data_in)
+                self._construct_request_body(endpoint, reader)
 
-    def validate_user_input(self, params, in_tables):
+        """
+        for data_in in pd.read_csv(f'{self.files_in_path}/{table["destination"]}', chunksize=500, dtype=str):
+
+            print(data_in)
+            continue
+
+            # Construct endpoint body & post request
+            self._construct_request_body(
+                endpoint, data_in)
+        """
+
+    def validate_user_input(self, in_tables):
 
         # 1 - Ensure there is a configuration
-        if params == {}:
+        if self.params == {}:
             logging.error('Empty configuration. Please configure your writer.')
             sys.exit(1)
 
         # 2 - Ensure API token is entered
-        if params.get(KEY_API_TOKEN) == '':
+        if self.params.get(KEY_API_TOKEN) == '':
             logging.error('API token is missing.')
             sys.exit(1)
 
         # 3 - Ensure an endpoint is selected and valid
-        if params.get(KEY_ENDPOINT) not in ENDPOINT_MAPPING:
+        if self.params.get(KEY_ENDPOINT) not in ENDPOINT_MAPPING:
             logging.error(
-                f'{params.get(KEY_ENDPOINT)} is not a valid endpoint.')
+                f'{self.params.get(KEY_ENDPOINT)} is not a valid endpoint.')
             sys.exit(1)
 
         # 4 - Ensure there are input files
@@ -152,22 +137,18 @@ class Component(CommonInterface):
         # 5 - Ensure all required columns are in the input files
         # for the respective endpoint.
         # Comparing this information with the file's manifest
-        required_columns = ENDPOINT_MAPPING[params.get(
+        required_columns = ENDPOINT_MAPPING[self.params.get(
             KEY_ENDPOINT)]['required_column']
 
         for table in in_tables:
-
             with open(f'{self.tables_in_path}/{table["destination"]}.manifest', 'r') as f:
                 table_manifest = json.load(f)
-
             table_columns = table_manifest['columns']
             missing_columns = []
 
             for r in required_columns:
-
                 if r not in table_columns:
                     missing_columns.append(r)
-
             if missing_columns:
                 logging.error(
                     f'Missing columns in input table [{table["destination"]}]: {missing_columns}')
@@ -177,12 +158,12 @@ class Component(CommonInterface):
         auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
         auth_param = {
             'count': 1,
-            'hapikey': params.get(KEY_API_TOKEN)
+            'hapikey': self.params.get(KEY_API_TOKEN)
         }
 
         auth_test = requests.get(auth_url, params=auth_param)
         if auth_test.status_code not in (200, 201):
-            expected_error_msg = f'This hapikey ({params.get(KEY_API_TOKEN)}) doesn\'t exist.'
+            expected_error_msg = f'This hapikey ({self.params.get(KEY_API_TOKEN)}) does not exist.'
             if auth_test.json()['message'] == expected_error_msg:
                 logging.error(
                     'Authentication Error. Please check your API token.')
@@ -194,107 +175,105 @@ class Component(CommonInterface):
                 logging.error(err_msg)
                 sys.exit(1)
 
+    def make_post(self, url, request_body):
+        """
+        Sets max retries and backoff factor for POSTs and makes POST call.
+        TODO: Can this be placed elsewhere?
+        Args:
+            url: complete target url
+            request_body: json that will be sent in POST
+
+        Returns:
+            None
+        """
+
+        s = Session()
+        s.mount('https://',
+                HTTPAdapter(
+                    max_retries=Retry(
+                        total=5,
+                        backoff_factor=1,
+                        status_forcelist=[500, 502, 503, 504, 521],
+                        allowed_methods=frozenset(['GET', 'POST']))))
+
+        response = s.post(
+            url, headers=self.base_headers,
+            params=self.base_params, json=request_body)
+
+        if response.status_code not in (200, 201):
+            response_json = response.json()
+            try:
+                logging.info(
+                    f'{response_json["message"]} - {request_body["properties"]}')
+            except KeyError:
+                logging.info(response_json["message"])
+
     def _construct_request_body(self, endpoint, data_in):
 
         if endpoint == 'create_contact':
-
-            headers = list(data_in.columns)
-
-            for index, user in data_in.iterrows():
-
+            for row in data_in:
                 request_body = {
                     'properties': []
                 }
+                for k, v in row.items():
+                    tmp = {
+                        'property': k,
+                        'value': str(v)
+                    }
+                    request_body['properties'].append(tmp)
 
-                for i in headers:
-
-                    if not pd.isnull(user[i]):
-                        tmp = {
-                            'property': i,
-                            'value': str(user[i])
-                        }
-                        request_body['properties'].append(tmp)
-
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
-
-                if response.status_code not in (200, 201):
-                    response_json = response.json()
-                    logging.info(
-                        f'{response_json["message"]} - {request_body["properties"]}')
+                self.make_post(
+                    url=f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}',
+                    request_body=request_body
+                )
 
         elif endpoint == 'create_list':
-
-            for index, contact_list in data_in.iterrows():
-
+            for row in data_in:
                 request_body = {
-                    'name': str(contact_list['name'])
+                    'name': str(row['name'])
                 }
 
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
-
-                if response.status_code not in (200, 201):
-                    response_json = response.json()
-                    logging.info(
-                        f'{contact_list["name"]} - {response_json["message"]}')
+                self.make_post(
+                    url=f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}',
+                    request_body=request_body
+                )
 
         elif endpoint == 'add_contact_to_list':
 
-            # distinct list_ids
-            distinct_list_id = data_in['list_id'].unique().tolist()
+            ordered_dict = list(data_in)
+            unique_list_ids = set()
 
-            # Grouping requests by list_id
-            data_in_by_list_id = data_in.groupby('list_id')
+            for row in ordered_dict:
+                unique_list_ids.add(row["list_id"])
 
-            for list_id in distinct_list_id:
+            for list_id in unique_list_ids:
+                vids = []
+                emails = []
 
-                if list_id == '':
+                if list_id == "":
                     # Ensuring all list_id inputs are not empty
-                    logging.error('Column [list_id] cannot be empty')
+                    logging.error("Column [list_id] cannot be empty")
                     sys.exit(1)
 
-                # Fetching datagroup belong to the list_id
-                list_id_sorted = data_in_by_list_id.get_group(list_id)
+                temp_list_of_dicts = ([x for x in ordered_dict if x["list_id"] == list_id])
+                for dic in temp_list_of_dicts:
+                    if dic["vids"]:
+                        vids.append(dic["vids"])
+                    else:
+                        emails.append(dic["emails"])
 
-                # Checking available headers
-                header = list(list_id_sorted.columns)
-
-                # Request parameters
-                endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
+                endpoint_path = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
                     '{list_id}', str(list_id))
+
                 request_body = {
-                    'vids': [],
-                    'emails': []
+                    "vids": vids,
+                    "emails": emails
                 }
 
-                # Constructing request body
-                for index, row in list_id_sorted.iterrows():
-
-                    # Always prioritize pushing VIDS than emails
-                    added_bool = False
-                    if 'vids' in header:
-                        if not pd.isnull(row['vids']):
-                            request_body['vids'].append(str(row['vids']))
-                        added_bool = True
-
-                    if 'emails' in header and not added_bool:
-                        if not pd.isnull(row['emails']):
-                            request_body['emails'].append(str(row['emails']))
-
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
-
-                if response.status_code not in (200, 201):
-                    response_json = response.json()
-                    logging.info(
-                        f'{response_json["message"]}')
+                self.make_post(
+                    url=f'{self.base_url}{endpoint_path}',
+                    request_body=request_body
+                )
 
         elif endpoint == 'remove_contact_from_list':
 
