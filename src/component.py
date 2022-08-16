@@ -4,7 +4,6 @@ Hubspot Writer
 '''
 import logging
 import json
-import pandas as pd
 import requests
 import csv
 
@@ -23,7 +22,6 @@ KEY_DEBUG = 'debug'
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
 REQUIRED_PARAMETERS = []
-REQUIRED_IMAGE_PARS = []
 
 
 class Component(ComponentBase):
@@ -39,7 +37,7 @@ class Component(ComponentBase):
         api_token = self.params.get(KEY_API_TOKEN)
 
         # Base parameters for the requests
-        self.base_url = 'https://api.hubapi.com/contacts/v1/'
+        self.base_url = 'https://api.hubapi.com/'
         self.base_headers = {
             'Content-Type': 'application/json'
         }
@@ -70,26 +68,7 @@ class Component(ComponentBase):
                 # Construct endpoint body & post request
                 self._construct_request_body(endpoint, reader)
 
-        """
-        for data_in in pd.read_csv(f'{self.files_in_path}/{table["destination"]}', chunksize=500, dtype=str):
-
-            print(data_in)
-            continue
-
-            # Construct endpoint body & post request
-            self._construct_request_body(
-                endpoint, data_in)
-        """
-
     def validate_user_input(self, in_tables):
-
-        # 1 - Ensure there is a configuration
-        if self.params == {}:
-            raise Exception('Empty configuration. Please configure your writer.')
-
-        # 2 - Ensure API token is entered
-        if self.params.get(KEY_API_TOKEN) == '':
-            raise Exception('API token is missing.')
 
         # 3 - Ensure an endpoint is selected and valid
         if self.params.get(KEY_ENDPOINT) not in ENDPOINT_MAPPING:
@@ -102,8 +81,7 @@ class Component(ComponentBase):
         # 5 - Ensure all required columns are in the input files
         # for the respective endpoint.
         # Comparing this information with the file's manifest
-        required_columns = ENDPOINT_MAPPING[self.params.get(
-            KEY_ENDPOINT)]['required_column']
+        required_columns = ENDPOINT_MAPPING[self.params.get(KEY_ENDPOINT)]['required_column']
 
         for table in in_tables:
             with open(f'{self.tables_in_path}/{table["destination"]}.manifest', 'r') as f:
@@ -115,7 +93,7 @@ class Component(ComponentBase):
                 if r not in table_columns:
                     missing_columns.append(r)
             if missing_columns:
-                raise Exception(f'Missing columns in input table [{table["destination"]}]: {missing_columns}')
+                raise Exception(f'Missing columns in input table {table["destination"]}: {missing_columns}')
 
         # 6 - Authentication Check to ensure the API token is valid
         auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
@@ -135,13 +113,14 @@ class Component(ComponentBase):
                     auth_test.status_code, auth_test.json()["message"])
                 raise Exception(err_msg)
 
-    def make_post(self, url, request_body):
+    def make_post(self, url, request_body, method):
         """
         Sets max retries and backoff factor for POSTs and makes POST call.
         TODO: Can this be placed elsewhere?
         Args:
             url: complete target url
             request_body: json that will be sent in POST
+            method: blabla
 
         Returns:
             None
@@ -156,17 +135,32 @@ class Component(ComponentBase):
                         status_forcelist=[500, 502, 503, 504, 521],
                         allowed_methods=frozenset(['GET', 'POST']))))
 
-        response = s.post(
-            url, headers=self.base_headers,
-            params=self.base_params, json=request_body)
+        if method == "post":
+            response = s.post(
+                url, headers=self.base_headers,
+                params=self.base_params, json=request_body)
+        elif method == "put":
+            response = s.put(
+                url, headers=self.base_headers,
+                params=self.base_params, json=request_body)
+        elif method == "delete":
+            response = s.delete(
+                url, headers=self.base_headers,
+                params=self.base_params, json=request_body)
+        else:
+            raise f"Method {method} not allowed."
 
-        if response.status_code not in (200, 201):
-            response_json = response.json()
+        if response.status_code not in (200, 201, 204):
+            response_json = None
             try:
+                response_json = response.json()
                 logging.error(
                     f'{response_json["message"]} - {request_body["properties"]}')
             except KeyError:
                 logging.error(response_json["message"])
+            except Exception as e:
+                logging.error(f"Unresolvable error: {e} with response {response}.")
+                logging.error(response.text)
 
     def _construct_request_body(self, endpoint, data_in):
 
@@ -184,8 +178,8 @@ class Component(ComponentBase):
 
                 self.make_post(
                     url=f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}',
-                    request_body=request_body
-                )
+                    request_body=request_body,
+                    method="post")
 
         elif endpoint == 'create_list':
             for row in data_in:
@@ -195,8 +189,8 @@ class Component(ComponentBase):
 
                 self.make_post(
                     url=f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}',
-                    request_body=request_body
-                )
+                    request_body=request_body,
+                    method="post")
 
         elif endpoint == 'add_contact_to_list':
 
@@ -221,8 +215,7 @@ class Component(ComponentBase):
                     else:
                         emails.append(dic["emails"])
 
-                endpoint_path = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
-                    '{list_id}', str(list_id))
+                endpoint_path = ENDPOINT_MAPPING[endpoint]['endpoint'].replace('{list_id}', str(list_id))
 
                 request_body = {
                     "vids": vids,
@@ -231,93 +224,141 @@ class Component(ComponentBase):
 
                 self.make_post(
                     url=f'{self.base_url}{endpoint_path}',
-                    request_body=request_body
-                )
+                    request_body=request_body,
+                    method="post")
 
         elif endpoint == 'remove_contact_from_list':
 
-            # distinct list_ids
-            distinct_list_id = data_in['list_id'].unique().tolist()
+            ordered_dict = list(data_in)
+            unique_list_ids = set()
 
-            # Grouping requests by list_id
-            data_in_by_list_id = data_in.groupby('list_id')
+            for row in ordered_dict:
+                unique_list_ids.add(row["list_id"])
 
-            for list_id in distinct_list_id:
+            for list_id in unique_list_ids:
+                vids = []
 
                 if list_id == '':
-                    # Ensuring all list_id inputs are not empty
-                    raise Exception('Column [list_id] cannot be empty')
+                    raise Exception('Column [list_id] cannot be empty.')
 
-                # Grouping requests by the list_id
-                list_id_sorted = data_in_by_list_id.get_group(list_id)
+                temp_list_of_dicts = ([x for x in ordered_dict if x["list_id"] == list_id])
+                for dic in temp_list_of_dicts:
+                    if dic["vids"] == "":
+                        raise Exception(f"Cannot process list with empty records in [vids] column. {dic}")
+                    vids.append(dic["vids"])
 
-                # Checking available headers
-                header = list(list_id_sorted.columns)
-
-                # Request parameters
-                endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
-                    '{list_id}', str(list_id))
+                endpoint_path = ENDPOINT_MAPPING[endpoint]['endpoint'].replace('{list_id}', str(list_id))
                 request_body = {
-                    'vids': []
+                    "vids": vids
                 }
 
-                # Constructing request body
-                for index, row in list_id_sorted.iterrows():
-                    if 'vids' in header:
-                        if not pd.isnull(row['vids']):
-                            request_body['vids'].append(str(row['vids']))
+                self.make_post(
+                    url=f'{self.base_url}{endpoint_path}',
+                    request_body=request_body,
+                    method="post")
 
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
+        elif endpoint == 'update_contact':
 
-                if response.status_code not in (200, 201):
-                    response_json = response.json()
-                    logging.info(
-                        f'{response_json["message"]}')
-
-        elif endpoint == 'update_contact' or endpoint == 'update_contact_by_email':
-
-            wildcard = 'vid' if endpoint == 'update_contact' else 'email'
-
-            headers = list(data_in.columns)
-            headers.remove(wildcard)
-
-            for index, row in data_in.iterrows():
-
-                logging.info(f'Updating contact [{row[wildcard]}]')
-
-                if row[wildcard] == '' or pd.isnull(row[wildcard]):
-                    logging.error(row)
-                    logging.error(f'[{wildcard}] cannot be empty.')
-                    continue
-
+            for row in data_in:
+                if row["vid"] == "":
+                    raise Exception(f"Cannot process list with empty records in [vid] column. {row}")
                 request_body = {
                     'properties': []
                 }
+                for k, v in row.items():
+                    if k != "vid":
+                        tmp = {
+                            'property': k,
+                            'value': str(v)
+                        }
+                        request_body['properties'].append(tmp)
 
-                # Request parameters
-                endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
-                    f'{{{wildcard}}}', str(row[wildcard]))
+                endpoint_path = ENDPOINT_MAPPING[endpoint]['endpoint'].replace('{vid}', str(row["vid"]))
 
-                for h in headers:
-                    temp_json = {
-                        'property': h,
-                        'value': row[h] if not pd.isnull(row[h]) else ''
+                self.make_post(
+                    url=f'{self.base_url}{endpoint_path}',
+                    request_body=request_body,
+                    method="post")
+
+        elif endpoint == 'update_contact_by_email':
+            for row in data_in:
+                if row["email"] == "":
+                    raise Exception(f"Cannot process list with empty records in [email] column. {row}")
+                request_body = {
+                    'properties': []
+                }
+                for k, v in row.items():
+                    if k != "email":
+                        tmp = {
+                            'property': k,
+                            'value': str(v)
+                        }
+                        request_body['properties'].append(tmp)
+
+                endpoint_path = ENDPOINT_MAPPING[endpoint]['endpoint'].replace('{email}', str(row["email"]))
+
+                self.make_post(
+                    url=f'{self.base_url}{endpoint_path}',
+                    request_body=request_body,
+                    method="post")
+
+        elif endpoint == 'create_company':
+            for row in data_in:
+                if row["name"] == "":
+                    raise Exception(f"Cannot process list with empty records in [name] column. {row}")
+                request_body = {
+                    'properties': []
+                }
+                for k, v in row.items():
+                    tmp = {
+                        "name": k,
+                        "value": str(v)
                     }
+                    request_body['properties'].append(tmp)
 
-                    request_body['properties'].append(temp_json)
+                self.make_post(
+                    url=f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}',
+                    request_body=request_body,
+                    method="post")
 
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
+        elif endpoint == 'update_company':
+            for row in data_in:
+                if row["company_id"] == "":
+                    raise Exception(f"Cannot process list with empty records in [company_id] column. {row}")
+                request_body = {
+                    'properties': []
+                }
+                for k, v in row.items():
+                    if k != "company_id":
+                        tmp = {
+                            'name': k,
+                            'value': str(v)
+                        }
+                        request_body['properties'].append(tmp)
 
-                if response.status_code not in (200, 201, 204):
-                    response_json = response.json()
-                    logging.info(
-                        f'{response_json["message"]}')
+                endpoint_path = ENDPOINT_MAPPING[endpoint]['endpoint'].replace('{company_id}', str(row["company_id"]))
+                url = f'{self.base_url}{endpoint_path}'
+
+                self.make_post(
+                    url=url,
+                    request_body=request_body,
+                    method="put")
+
+        elif endpoint == 'remove_company':
+            unique_list_ids = set()
+            for row in data_in:
+                if row["company_id"] == "":
+                    raise Exception(f"Cannot process list with empty records in [company_id] column. {row}")
+                unique_list_ids.add(row["company_id"])
+
+            for company_id in unique_list_ids:
+                endpoint_path = ENDPOINT_MAPPING[endpoint]['endpoint'].replace('{company_id}', company_id)
+                url = f'{self.base_url}{endpoint_path}'
+
+                self.make_post(
+                    url=url,
+                    request_body=None,
+                    method="delete")
 
 
 """
