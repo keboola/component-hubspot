@@ -9,7 +9,7 @@ import logging
 class Creator(ABC):
     """Template for classes handling communication with Hubspot API"""
 
-    def __init__(self, endpoint, hapikey):
+    def __init__(self, endpoint: str, hapikey: str):
         # Base parameters for the requests
         self.base_url = 'https://api.hubapi.com/'
         self.endpoint = endpoint
@@ -86,14 +86,12 @@ class CreateContact(Creator):
 
     def process_requests(self, data_in):
         for row in data_in:
-            if row["name"] == "":
-                raise Exception(f"Cannot process list with empty records in [name] column. {row}")
             request_body = {
                 'properties': []
             }
             for k, v in row.items():
                 tmp = {
-                    "name": k,
+                    "property": k,
                     "value": str(v)
                 }
                 request_body['properties'].append(tmp)
@@ -101,7 +99,7 @@ class CreateContact(Creator):
             self.make_request(
                 url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
                 request_body=request_body,
-                method="post")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class CreateList(Creator):
@@ -116,7 +114,7 @@ class CreateList(Creator):
             self.make_request(
                 url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
                 request_body=request_body,
-                method="post")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class AddContactToList(Creator):
@@ -151,10 +149,12 @@ class AddContactToList(Creator):
                 "emails": emails
             }
 
+            print(request_body)
+
             self.make_request(
                 url=f'{self.base_url}{endpoint_path}',
                 request_body=request_body,
-                method="post")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class RemoveContactFromList(Creator):
@@ -187,7 +187,7 @@ class RemoveContactFromList(Creator):
             self.make_request(
                 url=f'{self.base_url}{endpoint_path}',
                 request_body=request_body,
-                method="post")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class UpdateContact(Creator):
@@ -213,7 +213,7 @@ class UpdateContact(Creator):
             self.make_request(
                 url=f'{self.base_url}{endpoint_path}',
                 request_body=request_body,
-                method="post")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class UpdateContactByEmail(Creator):
@@ -239,7 +239,7 @@ class UpdateContactByEmail(Creator):
             self.make_request(
                 url=f'{self.base_url}{endpoint_path}',
                 request_body=request_body,
-                method="post")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class CreateCompany(Creator):
@@ -262,7 +262,7 @@ class CreateCompany(Creator):
             self.make_request(
                 url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
                 request_body=request_body,
-                method="post")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class UpdateCompany(Creator):
@@ -289,7 +289,7 @@ class UpdateCompany(Creator):
             self.make_request(
                 url=url,
                 request_body=request_body,
-                method="put")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class RemoveCompany(Creator):
@@ -309,7 +309,7 @@ class RemoveCompany(Creator):
             self.make_request(
                 url=url,
                 request_body=None,
-                method="delete")
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 def auth_check_ok(hapikey) -> bool:
@@ -355,7 +355,7 @@ def get_factory(endpoint, hapikey) -> Creator:
 
     if endpoint in endpoints:
         return endpoints[endpoint]
-    raise f"Unknown output endpoint option in config file: {endpoint}."
+    raise f"Unknown endpoint option: {endpoint}."
 
 
 def process_requests(endpoint, data_in, hapikey) -> None:
