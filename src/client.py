@@ -25,8 +25,8 @@ class Creator(ABC):
         self.s.mount('https://',
                      HTTPAdapter(
                          max_retries=Retry(
-                             total=5,
-                             backoff_factor=1,
+                             total=10,
+                             backoff_factor=1,  # {backoff factor} * (2 ** ({number of total retries} - 1))
                              status_forcelist=[500, 502, 503, 504, 521],
                              allowed_methods=frozenset(['GET', 'POST']))))
 
@@ -293,7 +293,7 @@ class UpdateCompany(Creator):
 
 
 class RemoveCompany(Creator):
-    """Removes company"""
+    """Removes company using company_id"""
 
     def process_requests(self, data_in):
         unique_list_ids = set()
@@ -317,6 +317,8 @@ def auth_check_ok(hapikey) -> bool:
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of hapikey.
     Returns:
         True if auth check succeeds
+    Raises:
+        Exceptions when auth fails.
     """
     # Authentication Check to ensure the API token is valid
     auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
@@ -360,7 +362,6 @@ def get_factory(endpoint, hapikey) -> Creator:
 
 def process_requests(endpoint, data_in, hapikey) -> None:
     """
-
     Args:
         endpoint: Hubspot API endpoint set in config.json
         data_in: csv.DictReader object with data from input csv
