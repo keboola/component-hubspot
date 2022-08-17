@@ -18,7 +18,10 @@
         "add_contact_to_list",
         "update_contact",
         "update_contact_by_email",
-        "remove_contact_from_list"
+        "remove_contact_from_list",
+        "create_company",
+        "update_company",
+        "remove_company"
       ],
       "type": "string",
       "title": "Endpoint",
@@ -30,7 +33,10 @@
           "Add Contact to List",
           "Update Contact",
           "Update Contact by Email",
-          "Remove Contact from List"
+          "Remove Contact from List",
+          "Create Company",
+          "Update Company",
+          "Remove Company"
         ]
       }
     }
