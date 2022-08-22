@@ -19,8 +19,7 @@ KEY_DEBUG = 'debug'
 # component will fail with readable message on initialization.
 REQUIRED_PARAMETERS = [
     KEY_API_TOKEN,
-    KEY_ENDPOINT,
-    KEY_DEBUG
+    KEY_ENDPOINT
 ]
 
 
