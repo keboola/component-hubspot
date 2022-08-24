@@ -27,7 +27,7 @@ class Creator(ABC):
                          max_retries=Retry(
                              total=10,
                              backoff_factor=1,  # {backoff factor} * (2 ** ({number of total retries} - 1))
-                             status_forcelist=[500, 502, 503, 504, 521],
+                             status_forcelist=[500, 502, 503, 504, 521, 404],
                              allowed_methods=frozenset(['GET', 'POST']))))
 
     @abstractmethod
