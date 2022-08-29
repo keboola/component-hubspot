@@ -1,14 +1,14 @@
 """
 Hubspot Writer
 """
-import logging
-import json
 import csv
+import json
+import logging
 
 from keboola.component.base import ComponentBase
 
-from endpoint_mapping import ENDPOINT_MAPPING
 from client import process_requests
+from endpoint_mapping import ENDPOINT_MAPPING
 
 # configuration variables
 KEY_API_TOKEN = '#api_token'
@@ -26,7 +26,7 @@ REQUIRED_PARAMETERS = [
 class Component(ComponentBase):
     def __init__(self):
         super().__init__()
-
+        # TODO: this is not needed. ComponentBase does that automatically.
         if self.configuration.parameters.get(KEY_DEBUG):
             logging.getLogger().setLevel(logging.DEBUG)
             logging.info('Loading configuration...')
@@ -44,12 +44,19 @@ class Component(ComponentBase):
         logging.info(f"Selected Endpoint: [{endpoint}]")
 
         # Input tables
+        # TODO: Using input mapping in configuration.json is not adviced, mainly because it prevents using "before" processors.
+        # Use self.get_input_tables_definitions() instead, this works with manifest files and is not dependent on cofig.json. Contains the same information
+
         in_tables = self.configuration.tables_input_mapping
+        # TODO: I would consider allowing only one input table here and make it eventually a row based component.
+        # Or does it make sense to have multiple tables on the input? E.g. to update different columns each time?
         self.validate_user_input(in_tables)
 
         # Looping all the input tables
         for table in in_tables:
             logging.info(f'Processing input table: {table["destination"]}')
+            # TODO: the f'{self.tables_in_path}/{table["destination"]}' is not needed and also is using hardcoded path separator
+            # If table definition object is used, it can be written like this open(table.full_path)
             with open(f'{self.tables_in_path}/{table["destination"]}') as csvfile:
                 reader = csv.DictReader(csvfile)
                 process_requests(endpoint, reader, self.api_token)

@@ -1,9 +1,27 @@
-from abc import ABC, abstractmethod
-from urllib3.util import Retry
-from requests.adapters import HTTPAdapter
-from requests import Session, get
-from endpoint_mapping import ENDPOINT_MAPPING
 import logging
+from abc import ABC, abstractmethod
+
+from requests import Session, get
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
+
+from endpoint_mapping import ENDPOINT_MAPPING
+
+# TODO: I like the Factory design! It's quite clear and a nice usecase for it. However:
+""" The exact same thing as is done in the Creator class is abstracted in keboola.http-client (which is also listed in the requirements.txt and not used)
+ It provides a nice extensibility in case that the make_request method may ever change. It most likely won't. Using separate Factory classes implementing
+ the Creator makes it a bit too verbose IMO. There's no default behaviour of process_requests anyway.
+ 
+ We usually create a HubSpotClient(HTTPClient) that uses the abstracted http client we built. The client instance would receive the token + common parameters.
+ Then instead of Factory classes there would be methods, like HubSpotClient.add_contacts_to_list(). This also allows cleaner documentation of requirements for input data on the method level.
+ 
+ The convenience "factory" method process_requests and get_factory, could actually exist in the client also. It would just return the appropriate client method. And call it directly
+ e.g. method = get_endpoint_method(endpoint) (same as get_factory)
+      method(input_data)
+      
+      
+One last argument for using the keboola.HTTPClient is that it will look familiar to anyone that knows our other components.
+"""
 
 
 class Creator(ABC):
@@ -148,7 +166,7 @@ class AddContactToList(Creator):
                 "vids": vids,
                 "emails": emails
             }
-
+            # TODO: this is probably leftover from the old code. If needed use logging.debug()
             print(request_body)
 
             self.make_request(
@@ -311,7 +329,8 @@ class RemoveCompany(Creator):
                 request_body=None,
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
-
+# TODO: I would name this test_credentials. And it would take no parameter, because the auth method would be set at the client intialization.
+# We will also use this for sync actions (once Product hears us out and enables this in dynamic generic UI)
 def auth_check_ok(hapikey) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of hapikey.
@@ -360,6 +379,10 @@ def get_factory(endpoint, hapikey) -> Creator:
     raise f"Unknown endpoint option: {endpoint}."
 
 
+# TODO: Minor thing, but I don't like the naming "process_requests" much. Too generic
+# TODO: The endpoint parameter can be of type since 3.8 [Literal](https://docs.python.org/3/library/typing.html#typing.Literal) that provides also implicit validation + type hint.
+#  Or I sometime use enums but that may add unnecessary complexity https://bitbucket.org/kds_consulting_team/kds-team.ex-hubspot-crm/src/28ed88a54883d3b778ee18391c8d8c1edf9d4194/src/hubspot_api/client_v3.py#lines-134
+#  It is just nicer to work with as a Pyton interface, but not needed.
 def process_requests(endpoint, data_in, hapikey) -> None:
     """
     Args:
