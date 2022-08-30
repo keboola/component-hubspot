@@ -1,30 +1,16 @@
-import logging
 from abc import ABC, abstractmethod
+import logging
+import csv
 
 from requests import Session, get
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
+from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
 
-# TODO: I like the Factory design! It's quite clear and a nice usecase for it. However:
-""" The exact same thing as is done in the Creator class is abstracted in keboola.http-client (which is also listed in the requirements.txt and not used)
- It provides a nice extensibility in case that the make_request method may ever change. It most likely won't. Using separate Factory classes implementing
- the Creator makes it a bit too verbose IMO. There's no default behaviour of process_requests anyway.
- 
- We usually create a HubSpotClient(HTTPClient) that uses the abstracted http client we built. The client instance would receive the token + common parameters.
- Then instead of Factory classes there would be methods, like HubSpotClient.add_contacts_to_list(). This also allows cleaner documentation of requirements for input data on the method level.
- 
- The convenience "factory" method process_requests and get_factory, could actually exist in the client also. It would just return the appropriate client method. And call it directly
- e.g. method = get_endpoint_method(endpoint) (same as get_factory)
-      method(input_data)
-      
-      
-One last argument for using the keboola.HTTPClient is that it will look familiar to anyone that knows our other components.
-"""
 
-
-class Creator(ABC):
+class HubSpotClient(ABC):
     """Template for classes handling communication with Hubspot API"""
 
     def __init__(self, endpoint: str, hapikey: str):
@@ -46,7 +32,7 @@ class Creator(ABC):
                              total=10,
                              backoff_factor=1,  # {backoff factor} * (2 ** ({number of total retries} - 1))
                              status_forcelist=[500, 502, 503, 504, 521, 404],
-                             allowed_methods=frozenset(['GET', 'POST']))))
+                             allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
 
     @abstractmethod
     def process_requests(self, data_in) -> None:
@@ -99,7 +85,7 @@ class Creator(ABC):
                 logging.error(response.text)
 
 
-class CreateContact(Creator):
+class CreateContact(HubSpotClient):
     """Creates contacts"""
 
     def process_requests(self, data_in):
@@ -120,7 +106,7 @@ class CreateContact(Creator):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class CreateList(Creator):
+class CreateList(HubSpotClient):
     """Creates a new contact list"""
 
     def process_requests(self, data_in):
@@ -135,7 +121,7 @@ class CreateList(Creator):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class AddContactToList(Creator):
+class AddContactToList(HubSpotClient):
     """Adds contacts to list"""
 
     def process_requests(self, data_in):
@@ -151,7 +137,7 @@ class AddContactToList(Creator):
 
             if list_id == "":
                 # Ensuring all list_id inputs are not empty
-                raise Exception("Column [list_id] cannot be empty")
+                raise UserException("Column [list_id] cannot be empty")
 
             temp_list_of_dicts = ([x for x in ordered_dict if x["list_id"] == list_id])
             for dic in temp_list_of_dicts:
@@ -166,8 +152,6 @@ class AddContactToList(Creator):
                 "vids": vids,
                 "emails": emails
             }
-            # TODO: this is probably leftover from the old code. If needed use logging.debug()
-            print(request_body)
 
             self.make_request(
                 url=f'{self.base_url}{endpoint_path}',
@@ -175,7 +159,7 @@ class AddContactToList(Creator):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class RemoveContactFromList(Creator):
+class RemoveContactFromList(HubSpotClient):
     """Removes contacts from lists"""
 
     def process_requests(self, data_in):
@@ -189,12 +173,12 @@ class RemoveContactFromList(Creator):
             vids = []
 
             if list_id == '':
-                raise Exception('Column [list_id] cannot be empty.')
+                raise UserException('Column [list_id] cannot be empty.')
 
             temp_list_of_dicts = ([x for x in ordered_dict if x["list_id"] == list_id])
             for dic in temp_list_of_dicts:
                 if dic["vids"] == "":
-                    raise Exception(f"Cannot process list with empty records in [vids] column. {dic}")
+                    raise UserException(f"Cannot process list with empty records in [vids] column. {dic}")
                 vids.append(dic["vids"])
 
             endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].replace('{list_id}', str(list_id))
@@ -208,13 +192,13 @@ class RemoveContactFromList(Creator):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class UpdateContact(Creator):
+class UpdateContact(HubSpotClient):
     """Updates contacts"""
 
     def process_requests(self, data_in):
         for row in data_in:
             if row["vid"] == "":
-                raise Exception(f"Cannot process list with empty records in [vid] column. {row}")
+                raise UserException(f"Cannot process list with empty records in [vid] column. {row}")
             request_body = {
                 'properties': []
             }
@@ -234,13 +218,13 @@ class UpdateContact(Creator):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class UpdateContactByEmail(Creator):
+class UpdateContactByEmail(HubSpotClient):
     """Updates contacts using email as ID"""
 
     def process_requests(self, data_in):
         for row in data_in:
             if row["email"] == "":
-                raise Exception(f"Cannot process list with empty records in [email] column. {row}")
+                raise UserException(f"Cannot process list with empty records in [email] column. {row}")
             request_body = {
                 'properties': []
             }
@@ -260,13 +244,13 @@ class UpdateContactByEmail(Creator):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class CreateCompany(Creator):
+class CreateCompany(HubSpotClient):
     """Creates company"""
 
     def process_requests(self, data_in):
         for row in data_in:
             if row["name"] == "":
-                raise Exception(f"Cannot process list with empty records in [name] column. {row}")
+                raise UserException(f"Cannot process list with empty records in [name] column. {row}")
             request_body = {
                 'properties': []
             }
@@ -283,13 +267,13 @@ class CreateCompany(Creator):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class UpdateCompany(Creator):
+class UpdateCompany(HubSpotClient):
     """Updates company using company ID"""
 
     def process_requests(self, data_in):
         for row in data_in:
             if row["company_id"] == "":
-                raise Exception(f"Cannot process list with empty records in [company_id] column. {row}")
+                raise UserException(f"Cannot process list with empty records in [company_id] column. {row}")
             request_body = {
                 'properties': []
             }
@@ -310,14 +294,14 @@ class UpdateCompany(Creator):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class RemoveCompany(Creator):
+class RemoveCompany(HubSpotClient):
     """Removes company using company_id"""
 
     def process_requests(self, data_in):
         unique_list_ids = set()
         for row in data_in:
             if row["company_id"] == "":
-                raise Exception(f"Cannot process list with empty records in [company_id] column. {row}")
+                raise UserException(f"Cannot process list with empty records in [company_id] column. {row}")
             unique_list_ids.add(row["company_id"])
 
         for company_id in unique_list_ids:
@@ -329,15 +313,14 @@ class RemoveCompany(Creator):
                 request_body=None,
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
-# TODO: I would name this test_credentials. And it would take no parameter, because the auth method would be set at the client intialization.
-# We will also use this for sync actions (once Product hears us out and enables this in dynamic generic UI)
-def auth_check_ok(hapikey) -> bool:
+
+def test_credentials(hapikey: str) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of hapikey.
     Returns:
         True if auth check succeeds
     Raises:
-        Exceptions when auth fails.
+        UserException when auth fails.
     """
     # Authentication Check to ensure the API token is valid
     auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
@@ -350,8 +333,7 @@ def auth_check_ok(hapikey) -> bool:
     if auth_test.status_code not in (200, 201):
         expected_error_msg = f'This hapikey ({hapikey}) does not exist.'
         if auth_test.json()['message'] == expected_error_msg:
-            raise Exception('Authentication Error. Please check your API token.')
-
+            raise UserException('Authentication Error. Please check your API token.')
         else:
             err_msg = 'Unexpected error. Please contact support - [{0}] - {1}'.format(
                 auth_test.status_code, auth_test.json()["message"])
@@ -359,7 +341,7 @@ def auth_check_ok(hapikey) -> bool:
     return True
 
 
-def get_factory(endpoint, hapikey) -> Creator:
+def get_factory(endpoint: str, hapikey: str) -> HubSpotClient:
     """Constructs an exporter factory based on endpoint selection"""
 
     endpoints = {
@@ -376,14 +358,10 @@ def get_factory(endpoint, hapikey) -> Creator:
 
     if endpoint in endpoints:
         return endpoints[endpoint]
-    raise f"Unknown endpoint option: {endpoint}."
+    raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
-# TODO: Minor thing, but I don't like the naming "process_requests" much. Too generic
-# TODO: The endpoint parameter can be of type since 3.8 [Literal](https://docs.python.org/3/library/typing.html#typing.Literal) that provides also implicit validation + type hint.
-#  Or I sometime use enums but that may add unnecessary complexity https://bitbucket.org/kds_consulting_team/kds-team.ex-hubspot-crm/src/28ed88a54883d3b778ee18391c8d8c1edf9d4194/src/hubspot_api/client_v3.py#lines-134
-#  It is just nicer to work with as a Pyton interface, but not needed.
-def process_requests(endpoint, data_in, hapikey) -> None:
+def run(endpoint: str, data_in: csv.DictReader, hapikey: str) -> None:
     """
     Args:
         endpoint: Hubspot API endpoint set in config.json
@@ -394,6 +372,5 @@ def process_requests(endpoint, data_in, hapikey) -> None:
         None
     """
 
-    if auth_check_ok(hapikey):
-        factory = get_factory(endpoint, hapikey)
-        factory.process_requests(data_in)
+    factory = get_factory(endpoint, hapikey)
+    factory.process_requests(data_in)
