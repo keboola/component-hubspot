@@ -13,31 +13,41 @@
     },
     "endpoint": {
       "enum": [
-        "create_contact",
-        "create_list",
-        "add_contact_to_list",
-        "update_contact",
-        "update_contact_by_email",
-        "remove_contact_from_list",
-        "create_company",
-        "update_company",
-        "remove_company"
+        "contact",
+        "company"
       ],
       "type": "string",
-      "title": "Endpoint",
+      "title": "Object",
       "propertyOrder": 200,
       "options": {
         "enum_titles": [
-          "Create Contact",
-          "Create List",
-          "Add Contact to List",
-          "Update Contact",
-          "Update Contact by Email",
-          "Remove Contact from List",
-          "Create Company",
-          "Update Company",
-          "Remove Company"
+          "Contact",
+          "Company"
         ]
+      }
+    },
+    "contact_action": {
+      "enum": [
+        "create",
+        "add_to_list",
+        "update",
+        "update_by_email",
+        "remove_from_list"
+      ],
+      "type": "string",
+      "title": "Object Action",
+      "propertyOrder": 210,
+      "options": {
+        "enum_titles": [
+          "Create ",
+          "Add to List",
+          "Update",
+          "Update by Email",
+          "Remove from List"
+        ],
+        "dependencies": {
+          "endpoint": "contact"
+        }
       }
     }
   }
