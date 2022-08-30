@@ -345,15 +345,15 @@ def get_factory(endpoint: str, hapikey: str) -> HubSpotClient:
     """Constructs an exporter factory based on endpoint selection"""
 
     endpoints = {
-        "create_contact": CreateContact(endpoint, hapikey),
-        "create_list": CreateList(endpoint, hapikey),
-        "add_contact_to_list": AddContactToList(endpoint, hapikey),
-        "remove_contact_from_list": RemoveContactFromList(endpoint, hapikey),
-        "update_contact": UpdateContact(endpoint, hapikey),
-        "update_contact_by_email": UpdateContactByEmail(endpoint, hapikey),
-        "create_company": CreateCompany(endpoint, hapikey),
-        "update_company": UpdateCompany(endpoint, hapikey),
-        "remove_company": RemoveCompany(endpoint, hapikey)
+        "contact_create": CreateContact(endpoint, hapikey),
+        "list_create": CreateList(endpoint, hapikey),
+        "contact_add_to_list": AddContactToList(endpoint, hapikey),
+        "contact_remove_from_list": RemoveContactFromList(endpoint, hapikey),
+        "contact_update": UpdateContact(endpoint, hapikey),
+        "contact_update_by_email": UpdateContactByEmail(endpoint, hapikey),
+        "company_create": CreateCompany(endpoint, hapikey),
+        "company_update": UpdateCompany(endpoint, hapikey),
+        "company_remove": RemoveCompany(endpoint, hapikey)
     }
 
     if endpoint in endpoints:

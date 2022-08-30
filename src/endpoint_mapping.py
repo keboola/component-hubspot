@@ -1,45 +1,45 @@
 ENDPOINT_MAPPING = {
-    'create_contact': {
+    'contact_create': {
         'endpoint': 'contacts/v1/contact',
         'required_column': [],
         'method': 'post'
     },
-    'create_list': {
+    'list_create': {
         'endpoint': 'contacts/v1/lists',
         'required_column': ['name'],
         'method': 'post'
     },
-    'add_contact_to_list': {
+    'contact_add_to_list': {
         'endpoint': 'contacts/v1/lists/{list_id}/add',
         'required_column': ['list_id', 'vids', 'emails'],
         'method': 'post'
     },
-    'remove_contact_from_list': {
+    'contact_remove_from_list': {
         'endpoint': 'contacts/v1/lists/{list_id}/remove',
         'required_column': ['list_id', 'vids'],
         'method': 'post'
     },
-    'update_contact': {
+    'contact_update': {
         'endpoint': 'contacts/v1/contact/vid/{vid}/profile',
         'required_column': ['vid'],
         'method': 'post'
     },
-    'update_contact_by_email': {
+    'contact_update_by_email': {
         'endpoint': 'contacts/v1/contact/email/{email}/profile',
         'required_column': ['email'],
         'method': 'post'
     },
-    'create_company': {
+    'company_create': {
         'endpoint': 'companies/v2/companies',
         'required_column': ['name'],
         'method': 'post'
     },
-    'update_company': {
+    'company_update': {
         'endpoint': 'companies/v2/companies/{company_id}',
         'required_column': ['company_id'],
         'method': 'put'
     },
-    'remove_company': {
+    'company_remove': {
         'endpoint': 'companies/v2/companies/{company_id}',
         'required_column': ['company_id'],
         'method': 'delete'
