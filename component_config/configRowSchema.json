@@ -1,1 +1,86 @@
-{}
+{
+   "type":"object",
+   "title":"Writer configuration",
+   "required":[
+      "hubspot_object"
+   ],
+   "properties":{
+      "hubspot_object":{
+         "enum":[
+            "contact",
+            "company",
+            "list"
+         ],
+         "type":"string",
+         "title":"Object",
+         "propertyOrder":200,
+         "options":{
+            "enum_titles":[
+               "Contact",
+               "Company",
+               "List"
+            ]
+         }
+      },
+      "contact_action":{
+         "enum":[
+            "create",
+            "add_to_list",
+            "update",
+            "update_by_email",
+            "remove_from_list"
+         ],
+         "type":"string",
+         "title":"Object Action",
+         "propertyOrder":210,
+         "options":{
+            "enum_titles":[
+               "Create ",
+               "Add to List",
+               "Update",
+               "Update by Email",
+               "Remove from List"
+            ],
+            "dependencies":{
+               "hubspot_object":"contact"
+            }
+         }
+      },
+      "company_action":{
+         "enum":[
+            "create",
+            "update",
+            "remove"
+         ],
+         "type":"string",
+         "title":"Object Action",
+         "propertyOrder":211,
+         "options":{
+            "enum_titles":[
+               "Create",
+               "Update",
+               "Remove"
+            ],
+            "dependencies":{
+               "hubspot_object":"company"
+            }
+         }
+      },
+      "list_action":{
+         "enum":[
+            "create"
+         ],
+         "type":"string",
+         "title":"Object Action",
+         "propertyOrder":212,
+         "options":{
+            "enum_titles":[
+               "Create"
+            ],
+            "dependencies":{
+               "hubspot_object":"list"
+            }
+         }
+      }
+   }
+}

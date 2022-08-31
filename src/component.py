@@ -54,7 +54,6 @@ class Component(ComponentBase):
 
         logging.info(f'Processing input table: {table.name}')
 
-        # If table definition object is used, it can be written like this open(table.full_path)
         with open(table.full_path) as csvfile:
             reader = csv.DictReader(csvfile)
             run(self.endpoint, reader, self.api_token)
