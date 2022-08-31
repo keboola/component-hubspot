@@ -8,7 +8,7 @@ from urllib3.util import Retry
 
 from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
-from typing import Literal
+from typing import Literal, Union
 
 
 class HubSpotClient(ABC):
@@ -46,7 +46,7 @@ class HubSpotClient(ABC):
             None
         """
 
-    def make_request(self, url: str, request_body: dict, method: Literal["post", "put", "delete"]) -> None:
+    def make_request(self, url: str, request_body: Union[dict, None], method: Literal["post", "put", "delete"]) -> None:
         """
         Makes Post/Put/Delete calls to target url.
         Args:
