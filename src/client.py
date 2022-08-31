@@ -8,6 +8,7 @@ from urllib3.util import Retry
 
 from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
+from typing import Literal
 
 
 class HubSpotClient(ABC):
@@ -35,7 +36,7 @@ class HubSpotClient(ABC):
                              allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
 
     @abstractmethod
-    def process_requests(self, data_in) -> None:
+    def process_requests(self, data_in: csv.DictReader) -> None:
         """
         Handles the assembly of URLs to call and request bodies to send.
         Args:
@@ -45,30 +46,22 @@ class HubSpotClient(ABC):
             None
         """
 
-    def make_request(self, url, request_body, method) -> None:
+    def make_request(self, url: str, request_body: dict, method: Literal["post", "put", "delete"]) -> None:
         """
         Makes Post/Put/Delete calls to target url.
         Args:
             url: complete target url
-            request_body: json that will be sent in POST
+            request_body: dict that will be sent in POST
             method: post/put/delete defined in endpoint_mapping.py
 
         Returns:
             None
         """
 
-        if method == "post":
-            response = self.s.post(
-                url, headers=self.base_headers,
-                params=self.base_params, json=request_body)
-        elif method == "put":
-            response = self.s.put(
-                url, headers=self.base_headers,
-                params=self.base_params, json=request_body)
-        elif method == "delete":
-            response = self.s.delete(
-                url, headers=self.base_headers,
-                params=self.base_params, json=request_body)
+        if method in ["post", "put", "delete"]:
+            response = self.s.request(method,
+                                      url, headers=self.base_headers,
+                                      params=self.base_params, json=request_body)
         else:
             raise f"Method {method} not allowed."
 
