@@ -14,17 +14,21 @@ from typing import Literal, Union
 class HubSpotClient(ABC):
     """Template for classes handling communication with Hubspot API"""
 
-    def __init__(self, endpoint: str, hapikey: str):
+    def __init__(self, endpoint: str, token: str, auth_type: Literal["API Key", "Private App Token"]):
         # Base parameters for the requests
         self.base_url = 'https://api.hubapi.com/'
         self.endpoint = endpoint
-        self.hapikey = hapikey
         self.base_headers = {
             'Content-Type': 'application/json'
         }
-        self.base_params = {
-            'hapikey': self.hapikey
-        }
+        if auth_type == 'API Key':
+            self.base_params = {
+                'hapikey': token
+            }
+            self.base_headers = {}
+        else:
+            self.base_params = {}
+            self.base_headers = {'Authorization': f'Bearer {token}'}
 
         self.s = Session()
         self.s.mount('https://',
@@ -307,9 +311,9 @@ class RemoveCompany(HubSpotClient):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-def test_credentials(hapikey: str) -> bool:
+def test_credentials(token: str, auth_type: Literal["API Key", "Private App Token"]) -> bool:
     """
-    Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of hapikey.
+    Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of token.
     Returns:
         True if auth check succeeds
     Raises:
@@ -317,15 +321,24 @@ def test_credentials(hapikey: str) -> bool:
     """
     # Authentication Check to ensure the API token is valid
     auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
-    auth_param = {
-        'count': 1,
-        'hapikey': hapikey
-    }
 
-    auth_test = get(auth_url, params=auth_param)
+    if auth_type == 'API Key':
+        auth_param = {
+            'count': 1,
+            'hapikey': token
+        }
+        auth_headers = {}
+    else:
+        auth_param = {
+            'count': 1
+        }
+        auth_headers = {'Authorization': f'Bearer {token}'}
+
+    auth_test = get(auth_url, params=auth_param, headers=auth_headers)
     if auth_test.status_code not in (200, 201):
-        expected_error_msg = f'This hapikey ({hapikey}) does not exist.'
-        if auth_test.json()['message'] == expected_error_msg:
+        error_msgs = ["This hapikey doesn't exist.", "Any of the listed authentication credentials are missing"]
+        print(auth_test.json()['message'])
+        if auth_test.json()['message'] in error_msgs:
             raise UserException('Authentication Error. Please check your API token.')
         else:
             err_msg = 'Unexpected error. Please contact support - [{0}] - {1}'.format(
@@ -334,19 +347,19 @@ def test_credentials(hapikey: str) -> bool:
     return True
 
 
-def get_factory(endpoint: str, hapikey: str) -> HubSpotClient:
+def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Private App Token"]) -> HubSpotClient:
     """Constructs an exporter factory based on endpoint selection"""
 
     endpoints = {
-        "contact_create": CreateContact(endpoint, hapikey),
-        "list_create": CreateList(endpoint, hapikey),
-        "contact_add_to_list": AddContactToList(endpoint, hapikey),
-        "contact_remove_from_list": RemoveContactFromList(endpoint, hapikey),
-        "contact_update": UpdateContact(endpoint, hapikey),
-        "contact_update_by_email": UpdateContactByEmail(endpoint, hapikey),
-        "company_create": CreateCompany(endpoint, hapikey),
-        "company_update": UpdateCompany(endpoint, hapikey),
-        "company_remove": RemoveCompany(endpoint, hapikey)
+        "contact_create": CreateContact(endpoint, token, auth_type),
+        "list_create": CreateList(endpoint, token, auth_type),
+        "contact_add_to_list": AddContactToList(endpoint, token, auth_type),
+        "contact_remove_from_list": RemoveContactFromList(endpoint, token, auth_type),
+        "contact_update": UpdateContact(endpoint, token, auth_type),
+        "contact_update_by_email": UpdateContactByEmail(endpoint, token, auth_type),
+        "company_create": CreateCompany(endpoint, token, auth_type),
+        "company_update": UpdateCompany(endpoint, token, auth_type),
+        "company_remove": RemoveCompany(endpoint, token, auth_type)
     }
 
     if endpoint in endpoints:
@@ -354,16 +367,17 @@ def get_factory(endpoint: str, hapikey: str) -> HubSpotClient:
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
-def run(endpoint: str, data_in: csv.DictReader, hapikey: str) -> None:
+def run(endpoint: str, data_in: csv.DictReader, token: str, auth_type: Literal["API Key", "Private App Token"]) -> None:
     """
     Args:
+        auth_type: "API Key" or "Private App Token"
+        token: API key for Hubspot API
         endpoint: Hubspot API endpoint set in config.json
         data_in: csv.DictReader object with data from input csv
-        hapikey: API key for Hubspot API
 
     Returns:
         None
     """
 
-    factory = get_factory(endpoint, hapikey)
+    factory = get_factory(endpoint, token, auth_type)
     factory.process_requests(data_in)

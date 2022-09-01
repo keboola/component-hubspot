@@ -12,13 +12,11 @@ from client import run, test_credentials
 from endpoint_mapping import ENDPOINT_MAPPING
 
 # configuration variables
-KEY_API_TOKEN = '#api_token'
 KEY_OBJECT = 'hubspot_object'
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
 REQUIRED_PARAMETERS = [
-    KEY_API_TOKEN,
     KEY_OBJECT
 ]
 
@@ -31,8 +29,8 @@ class Component(ComponentBase):
     def __init__(self):
         super().__init__()
 
+        self.token = None
         self.params = self.configuration.parameters
-        self.api_token = self.params.get(KEY_API_TOKEN)
 
         self.action = self.get_action()
         self.hubspot_object = self.params.get(KEY_OBJECT)
@@ -43,37 +41,45 @@ class Component(ComponentBase):
         Main execution code
         """
 
+        authentication_type = self.params.get("authentication_type", "API Key")
+        if authentication_type == "API Key":
+            self.token = self.params["#api_token"]
+        elif authentication_type == "Private App Token":
+            self.token = self.params["#private_app_token"]
+        else:
+            raise ValueError(f"Invalid authentication type: {authentication_type}")
+
         # Input tables
         in_tables = self.get_input_tables_definitions()
         table = in_tables[0]
 
         # Input checks
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
-        test_credentials(self.api_token)
+        test_credentials(self.token, authentication_type)
         self.validate_user_input(table)
 
-        logging.info(f'Processing input table: {table.name}')
+        logging.info(f"Processing input table: {table.name}")
 
         with open(table.full_path) as csvfile:
             reader = csv.DictReader(csvfile)
-            run(self.endpoint, reader, self.api_token)
+            run(self.endpoint, reader, self.token, authentication_type)
 
     def get_action(self):
-        if ((action := coalesce(self.params.get('contact_action'),
-                                self.params.get('company_action'),
-                                self.params.get('list_action'))) is None):
-            raise UserException('A valid Object action must be provided.')
+        if ((action := coalesce(self.params.get("contact_action"),
+                                self.params.get("company_action"),
+                                self.params.get("list_action"))) is None):
+            raise UserException("A valid Object action must be provided.")
         return action
 
     def validate_user_input(self, table: dao.TableDefinition):
 
         # 1 - Ensure an endpoint is selected and valid
         if self.endpoint not in ENDPOINT_MAPPING:
-            raise UserException(f'{self.endpoint} is not a valid endpoint.')
+            raise UserException(f"{self.endpoint} is not a valid endpoint.")
 
         # 2 - Ensure all required columns are in the input files for the respective endpoint.
         # Comparing this information with the file's manifest
-        required_columns = ENDPOINT_MAPPING[self.endpoint]['required_column']
+        required_columns = ENDPOINT_MAPPING[self.endpoint]["required_column"]
         table_columns = table.columns
         missing_columns = []
 
@@ -81,7 +87,7 @@ class Component(ComponentBase):
             if r not in table_columns:
                 missing_columns.append(r)
         if missing_columns:
-            raise UserException(f'Missing columns in input table {table.name}')
+            raise UserException(f"Missing columns in input table {table.name}")
 
 
 """
