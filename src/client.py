@@ -78,8 +78,8 @@ class HubSpotClient(ABC):
             except KeyError:
                 raise UserException(f"Error: {response_json['message']}")
             except Exception as e:
-                logging.error(f"Unresolvable error: {e} with response {response}.")
                 logging.error(response.text)
+                raise ValueError(f"Unresolvable error: {e} with response {response}.")
 
 
 class CreateContact(HubSpotClient):
