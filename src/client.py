@@ -76,7 +76,7 @@ class HubSpotClient(ABC):
                 logging.error(
                     f'{response.text} - {response_json["message"]} - {request_body["properties"]}')
             except KeyError:
-                logging.error(response_json["message"])
+                logging.error(f"Error: {response_json['message']}")
             except Exception as e:
                 logging.error(f"Unresolvable error: {e} with response {response}.")
                 logging.error(response.text)
