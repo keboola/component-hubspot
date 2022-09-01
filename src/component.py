@@ -87,7 +87,7 @@ class Component(ComponentBase):
             if r not in table_columns:
                 missing_columns.append(r)
         if missing_columns:
-            raise UserException(f"Missing columns in input table {table.name}")
+            raise UserException(f"Missing columns {missing_columns} in input table {table.name}")
 
 
 """

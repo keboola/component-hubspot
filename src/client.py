@@ -34,9 +34,9 @@ class HubSpotClient(ABC):
         self.s.mount('https://',
                      HTTPAdapter(
                          max_retries=Retry(
-                             total=10,
-                             backoff_factor=1,  # {backoff factor} * (2 ** ({number of total retries} - 1))
-                             status_forcelist=[500, 502, 503, 504, 521, 404],
+                             total=5,
+                             backoff_factor=0.3,  # {backoff factor} * (2 ** ({number of total retries} - 1))
+                             status_forcelist=[500, 502, 503, 504, 521],
                              allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
 
     @abstractmethod
@@ -71,6 +71,7 @@ class HubSpotClient(ABC):
 
         if response.status_code not in (200, 201, 204):
             response_json = None
+            print(response.text)
             try:
                 response_json = response.json()
                 logging.error(
