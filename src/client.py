@@ -71,11 +71,10 @@ class HubSpotClient(ABC):
 
         if response.status_code not in (200, 201, 204):
             response_json = None
-            print(response.text)
             try:
                 response_json = response.json()
                 logging.error(
-                    f'{response_json["message"]} - {request_body["properties"]}')
+                    f'{response.text} - {response_json["message"]} - {request_body["properties"]}')
             except KeyError:
                 logging.error(response_json["message"])
             except Exception as e:
