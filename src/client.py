@@ -348,7 +348,13 @@ def test_credentials(token: str, auth_type: Literal["API Key", "Private App Toke
 
 
 def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Private App Token"]) -> HubSpotClient:
-    """Constructs an exporter factory based on endpoint selection"""
+    """Constructs an exporter factory based on endpoint selection
+
+    Args:
+        endpoint: Hubspot API endpoint set in config.json
+        token: API key for Hubspot API
+        auth_type: "API Key" or "Private App Token"
+    """
 
     endpoints = {
         "contact_create": CreateContact(endpoint, token, auth_type),
@@ -369,10 +375,11 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
 
 def run(endpoint: str, data_in: csv.DictReader, token: str, auth_type: Literal["API Key", "Private App Token"]) -> None:
     """
+    Main entrypoint to call.
     Args:
         auth_type: "API Key" or "Private App Token"
         token: API key for Hubspot API
-        endpoint: Hubspot API endpoint set in config.json
+        endpoint: Hubspot API endpoint
         data_in: csv.DictReader object with data from input csv
 
     Returns:
