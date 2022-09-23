@@ -4,12 +4,12 @@ Hubspot Writer
 import csv
 import logging
 
-from keboola.component.base import ComponentBase
 from keboola.component import dao
-from exceptions import UserException
+from keboola.component.base import ComponentBase
 
-from client import run, test_credentials
+import client as hubspot_client
 from endpoint_mapping import ENDPOINT_MAPPING
+from exceptions import UserException
 
 # configuration variables
 KEY_OBJECT = 'hubspot_object'
@@ -55,14 +55,14 @@ class Component(ComponentBase):
 
         # Input checks
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
-        test_credentials(self.token, authentication_type)
+        hubspot_client.test_credentials(self.token, authentication_type)
         self.validate_user_input(table)
 
         logging.info(f"Processing input table: {table.name}")
 
         with open(table.full_path) as csvfile:
             reader = csv.DictReader(csvfile)
-            run(self.endpoint, reader, self.token, authentication_type)
+            hubspot_client.run(self.endpoint, reader, self.token, authentication_type)
 
     def get_action(self):
         if ((action := coalesce(self.params.get("contact_action"),
