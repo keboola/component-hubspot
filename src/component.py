@@ -8,11 +8,11 @@ from keboola.component import dao
 from keboola.component.base import ComponentBase
 
 import client as hubspot_client
-from endpoint_mapping import ENDPOINT_MAPPING
+from endpoint_mapping import ENDPOINT_MAPPING, LEGACY_ENDPOINT_MAPPING_CONVERSION
 from exceptions import UserException
 
 # configuration variables
-KEY_OBJECT = 'hubspot_object'
+KEY_OBJECT = 'endpoint'
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
@@ -31,10 +31,6 @@ class Component(ComponentBase):
 
         self.token = None
         self.params = self.configuration.parameters
-
-        self.action = self.get_action()
-        self.hubspot_object = self.params.get(KEY_OBJECT)
-        self.endpoint = f"{self.hubspot_object}_{self.action}"
 
     def run(self):
         """
@@ -64,10 +60,24 @@ class Component(ComponentBase):
             reader = csv.DictReader(csvfile)
             hubspot_client.run(self.endpoint, reader, self.token, authentication_type)
 
-    def get_action(self):
-        if ((action := coalesce(self.params.get("contact_action"),
-                                self.params.get("company_action"),
-                                self.params.get("list_action"))) is None):
+    @property
+    def hubspot_object(self) -> str:
+        return self.params.get(KEY_OBJECT)
+
+    @property
+    def endpoint(self) -> str:
+        if self.hubspot_object in list(LEGACY_ENDPOINT_MAPPING_CONVERSION.keys()):
+            return LEGACY_ENDPOINT_MAPPING_CONVERSION[self.hubspot_object]
+        else:
+            return f"{self.hubspot_object}_{self.action}"
+
+    @property
+    def action(self) -> str:
+        action = coalesce(self.params.get("contact_action"),
+                          self.params.get("company_action"),
+                          self.params.get("list_action"))
+
+        if action is None and self.hubspot_object not in list(LEGACY_ENDPOINT_MAPPING_CONVERSION.keys()):
             raise UserException("A valid Object action must be provided.")
         return action
 

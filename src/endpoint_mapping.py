@@ -45,3 +45,11 @@ ENDPOINT_MAPPING = {
         'method': 'delete'
     }
 }
+
+# for backward compatibility
+LEGACY_ENDPOINT_MAPPING_CONVERSION = {'create_contact': 'contact_create',
+                                      'create_list': 'list_create',
+                                      'add_contact_to_list': 'contact_add_to_list',
+                                      'remove_contact_from_list': 'contact_remove_from_list',
+                                      'update_contact': 'contact_update',
+                                      'update_contact_by_email': 'contact_update_by_email'}
