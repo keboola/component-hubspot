@@ -1,38 +1,44 @@
 {
-  "type": "object",
-  "title": "extractor configuration",
-  "required": [
-    "#api_token",
-    "endpoint"
-  ],
-  "properties": {
-    "#api_token": {
-      "type": "string",
-      "title": "API Key",
-      "propertyOrder": 100
-    },
-    "endpoint": {
-      "enum": [
-        "create_contact",
-        "create_list",
-        "add_contact_to_list",
-        "update_contact",
-        "update_contact_by_email",
-        "remove_contact_from_list"
-      ],
-      "type": "string",
-      "title": "Endpoint",
-      "propertyOrder": 200,
-      "options": {
-        "enum_titles": [
-          "Create Contact",
-          "Create List",
-          "Add Contact to List",
-          "Update Contact",
-          "Update Contact by Email",
-          "Remove Contact from List"
-        ]
+   "type": "object",
+   "title": "Authorization configuration",
+   "properties": {
+      "authentication_type": {
+         "type": "string",
+         "title": "Authentication Type",
+         "description": "<b style='color:red'>NOTE: API Key authentication will be deprecated starting 10/2022.</b>",
+         "enum": [
+            "API Key",
+            "Private App Token"
+         ],
+         "default": "API Key",
+         "propertyOrder": 10
+      },
+      "#api_token": {
+         "type": "string",
+         "title": "API token",
+         "format": "password",
+         "propertyOrder": 200,
+         "options": {
+            "dependencies": {
+               "authentication_type": [
+                  "API Key"
+               ]
+            }
+         }
+      },
+      "#private_app_token": {
+         "type": "string",
+         "title": "Private App Token",
+         "description": "Your private app token. More info <a href=\"https://developers.hubspot.com/docs/api/migrate-an-api-key-integration-to-a-private-app\">here</a>",
+         "format": "password",
+         "propertyOrder": 200,
+         "options": {
+            "dependencies": {
+               "authentication_type": [
+                  "Private App Token"
+               ]
+            }
+         }
       }
-    }
-  }
+   }
 }

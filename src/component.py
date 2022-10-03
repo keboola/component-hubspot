@@ -1,387 +1,103 @@
-'''
+"""
 Hubspot Writer
-
-'''
+"""
+import csv
 import logging
-import os
-import sys
-from pathlib import Path
-import json
-import pandas as pd
-import requests
 
-from keboola.component import CommonInterface
+from keboola.component import dao
+from keboola.component.base import ComponentBase
+
+import client as hubspot_client
+from endpoint_mapping import ENDPOINT_MAPPING, LEGACY_ENDPOINT_MAPPING_CONVERSION
+from exceptions import UserException
 
 # configuration variables
-KEY_API_TOKEN = '#api_token'
-KEY_ENDPOINT = 'endpoint'
-
-# #### Keep for debug
-KEY_DEBUG = 'debug'
+KEY_OBJECT = 'endpoint'
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
-REQUIRED_PARAMETERS = []
-REQUIRED_IMAGE_PARS = []
-
-# Request Mapping
-ENDPOINT_MAPPING = {
-    'create_contact': {
-        'endpoint': 'contact',
-        'required_column': []
-    },
-    'create_list': {
-        'endpoint': 'lists',
-        'required_column': ['name']
-    },
-    'add_contact_to_list': {
-        'endpoint': 'lists/{list_id}/add',
-        'required_column': ['list_id', 'vids', 'emails']
-    },
-    'remove_contact_from_list': {
-        'endpoint': 'lists/{list_id}/remove',
-        'required_column': ['list_id', 'vids']
-    },
-    'update_contact': {
-        'endpoint': 'contact/vid/{vid}/profile',
-        'required_column': ['vid']
-    },
-    'update_contact_by_email': {
-        'endpoint': 'contact/email/{email}/profile',
-        'required_column': ['email']
-    }
-}
-
-APP_VERSION = '0.0.3'
+REQUIRED_PARAMETERS = [
+    KEY_OBJECT
+]
 
 
-def get_local_data_path():
-    return Path(__file__).resolve().parent.parent.joinpath('data').as_posix()
+def coalesce(*arg):
+    return next((a for a in arg if a is not None), None)
 
 
-def get_data_folder_path():
-    data_folder_path = None
-    if not os.environ.get('KBC_DATADIR'):
-        data_folder_path = get_local_data_path()
-    return data_folder_path
+class Component(ComponentBase):
+    def __init__(self):
+        super().__init__()
 
-
-class Component(CommonInterface):
-    def __init__(self, debug=False):
-        # for easier local project setup
-        data_folder_path = get_data_folder_path()
-        super().__init__(data_folder_path=data_folder_path)
-
-        debug = self.configuration.parameters.get(KEY_DEBUG)
-        # override debug from config
-        if debug:
-            debug = True
-        else:
-            debug = False
-        if debug:
-            logging.getLogger().setLevel(logging.DEBUG)
-            logging.info('Running version %s', APP_VERSION)
-            logging.info('Loading configuration...')
-
-        try:
-            # validation of required parameters. Produces ValueError
-            self.validate_configuration(REQUIRED_PARAMETERS)
-            self.validate_image_parameters(REQUIRED_IMAGE_PARS)
-        except ValueError as e:
-            logging.exception(e)
-            exit(1)
+        self.token = None
+        self.params = self.configuration.parameters
 
     def run(self):
-        '''
+        """
         Main execution code
-        '''
-        params = self.configuration.parameters
-        endpoint = params.get(KEY_ENDPOINT)
-        api_token = params.get(KEY_API_TOKEN)
-        logging.info(f'Selected Endpoint: [{endpoint}]')
+        """
+
+        authentication_type = self.params.get("authentication_type", "API Key")
+        if authentication_type == "API Key":
+            self.token = self.params["#api_token"]
+        elif authentication_type == "Private App Token":
+            self.token = self.params["#private_app_token"]
+        else:
+            raise ValueError(f"Invalid authentication type: {authentication_type}")
 
         # Input tables
-        in_tables = self.configuration.tables_input_mapping
+        in_tables = self.get_input_tables_definitions()
+        table = in_tables[0]
 
-        # Validate user inputs
-        self.validate_user_input(params, in_tables)
+        # Input checks
+        self.validate_configuration_parameters(REQUIRED_PARAMETERS)
+        hubspot_client.test_credentials(self.token, authentication_type)
+        self.validate_user_input(table)
 
-        # Base parameters for the requests
-        self.base_url = 'https://api.hubapi.com/contacts/v1/'
-        self.base_headers = {
-            'Content-Type': 'application/json'
-        }
-        self.base_params = {
-            'hapikey': api_token
-        }
+        logging.info(f"Processing input table: {table.name}")
 
-        # Looping all the input tables
-        for table in in_tables:
+        with open(table.full_path) as csvfile:
+            reader = csv.DictReader(csvfile)
+            hubspot_client.run(self.endpoint, reader, self.token, authentication_type)
 
-            logging.info(f'Processing input table: {table["destination"]}')
+    @property
+    def hubspot_object(self) -> str:
+        return self.params.get(KEY_OBJECT)
 
-            for data_in in pd.read_csv(f'{self.tables_in_path}/{table["destination"]}', chunksize=500, dtype=str):
+    @property
+    def endpoint(self) -> str:
+        if self.hubspot_object in list(LEGACY_ENDPOINT_MAPPING_CONVERSION.keys()):
+            return LEGACY_ENDPOINT_MAPPING_CONVERSION[self.hubspot_object]
+        else:
+            return f"{self.hubspot_object}_{self.action}"
 
-                # Construct endpoint body & post request
-                self._construct_request_body(
-                    endpoint, data_in)
+    @property
+    def action(self) -> str:
+        action = coalesce(self.params.get("contact_action"),
+                          self.params.get("company_action"),
+                          self.params.get("list_action"))
 
-    def validate_user_input(self, params, in_tables):
+        if action is None and self.hubspot_object not in list(LEGACY_ENDPOINT_MAPPING_CONVERSION.keys()):
+            raise UserException("A valid Object action must be provided.")
+        return action
 
-        # 1 - Ensure there is a configuration
-        if params == {}:
-            logging.error('Empty configuration. Please configure your writer.')
-            sys.exit(1)
+    def validate_user_input(self, table: dao.TableDefinition):
 
-        # 2 - Ensure API token is entered
-        if params.get(KEY_API_TOKEN) == '':
-            logging.error('API token is missing.')
-            sys.exit(1)
+        # 1 - Ensure an endpoint is selected and valid
+        if self.endpoint not in ENDPOINT_MAPPING:
+            raise UserException(f"{self.endpoint} is not a valid endpoint.")
 
-        # 3 - Ensure an endpoint is selected and valid
-        if params.get(KEY_ENDPOINT) not in ENDPOINT_MAPPING:
-            logging.error(
-                f'{params.get(KEY_ENDPOINT)} is not a valid endpoint.')
-            sys.exit(1)
-
-        # 4 - Ensure there are input files
-        if len(in_tables) < 1:
-            logging.error('Input tables are missing.')
-            sys.exit(1)
-
-        # 5 - Ensure all required columns are in the input files
-        # for the respective endpoint.
+        # 2 - Ensure all required columns are in the input files for the respective endpoint.
         # Comparing this information with the file's manifest
-        required_columns = ENDPOINT_MAPPING[params.get(
-            KEY_ENDPOINT)]['required_column']
+        required_columns = ENDPOINT_MAPPING[self.endpoint]["required_column"]
+        table_columns = table.columns
+        missing_columns = []
 
-        for table in in_tables:
-
-            with open(f'{self.tables_in_path}/{table["destination"]}.manifest', 'r') as f:
-                table_manifest = json.load(f)
-
-            table_columns = table_manifest['columns']
-            missing_columns = []
-
-            for r in required_columns:
-
-                if r not in table_columns:
-                    missing_columns.append(r)
-
-            if missing_columns:
-                logging.error(
-                    f'Missing columns in input table [{table["destination"]}]: {missing_columns}')
-                sys.exit(1)
-
-        # 6 - Authentication Check to ensure the API token is valid
-        auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
-        auth_param = {
-            'count': 1,
-            'hapikey': params.get(KEY_API_TOKEN)
-        }
-
-        auth_test = requests.get(auth_url, params=auth_param)
-        if auth_test.status_code not in (200, 201):
-            expected_error_msg = f'This hapikey ({params.get(KEY_API_TOKEN)}) doesn\'t exist.'
-            if auth_test.json()['message'] == expected_error_msg:
-                logging.error(
-                    'Authentication Error. Please check your API token.')
-                sys.exit(1)
-
-            else:
-                err_msg = 'Unexpected error. Please contact support - [{0}] - {1}'.format(
-                    auth_test.status_code, auth_test.json()["message"])
-                logging.error(err_msg)
-                sys.exit(1)
-
-    def _construct_request_body(self, endpoint, data_in):
-
-        if endpoint == 'create_contact':
-
-            headers = list(data_in.columns)
-
-            for index, user in data_in.iterrows():
-
-                request_body = {
-                    'properties': []
-                }
-
-                for i in headers:
-
-                    if not pd.isnull(user[i]):
-                        tmp = {
-                            'property': i,
-                            'value': str(user[i])
-                        }
-                        request_body['properties'].append(tmp)
-
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
-
-                if response.status_code not in (200, 201):
-                    response_json = response.json()
-                    logging.info(
-                        f'{response_json["message"]} - {request_body["properties"]}')
-
-        elif endpoint == 'create_list':
-
-            for index, contact_list in data_in.iterrows():
-
-                request_body = {
-                    'name': str(contact_list['name'])
-                }
-
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{ENDPOINT_MAPPING[endpoint]["endpoint"]}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
-
-                if response.status_code not in (200, 201):
-                    response_json = response.json()
-                    logging.info(
-                        f'{contact_list["name"]} - {response_json["message"]}')
-
-        elif endpoint == 'add_contact_to_list':
-
-            # distinct list_ids
-            distinct_list_id = data_in['list_id'].unique().tolist()
-
-            # Grouping requests by list_id
-            data_in_by_list_id = data_in.groupby('list_id')
-
-            for list_id in distinct_list_id:
-
-                if list_id == '':
-                    # Ensuring all list_id inputs are not empty
-                    logging.error('Column [list_id] cannot be empty')
-                    sys.exit(1)
-
-                # Fetching datagroup belong to the list_id
-                list_id_sorted = data_in_by_list_id.get_group(list_id)
-
-                # Checking available headers
-                header = list(list_id_sorted.columns)
-
-                # Request parameters
-                endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
-                    '{list_id}', str(list_id))
-                request_body = {
-                    'vids': [],
-                    'emails': []
-                }
-
-                # Constructing request body
-                for index, row in list_id_sorted.iterrows():
-
-                    # Always prioritize pushing VIDS than emails
-                    added_bool = False
-                    if 'vids' in header:
-                        if not pd.isnull(row['vids']):
-                            request_body['vids'].append(str(row['vids']))
-                        added_bool = True
-
-                    if 'emails' in header and not added_bool:
-                        if not pd.isnull(row['emails']):
-                            request_body['emails'].append(str(row['emails']))
-
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
-
-                if response.status_code not in (200, 201):
-                    response_json = response.json()
-                    logging.info(
-                        f'{response_json["message"]}')
-
-        elif endpoint == 'remove_contact_from_list':
-
-            # distinct list_ids
-            distinct_list_id = data_in['list_id'].unique().tolist()
-
-            # Grouping requests by list_id
-            data_in_by_list_id = data_in.groupby('list_id')
-
-            for list_id in distinct_list_id:
-
-                if list_id == '':
-                    # Ensuring all list_id inputs are not empty
-                    logging.error('Column [list_id] cannot be empty')
-                    sys.exit(1)
-
-                # Grouping requests by the list_id
-                list_id_sorted = data_in_by_list_id.get_group(list_id)
-
-                # Checking available headers
-                header = list(list_id_sorted.columns)
-
-                # Request parameters
-                endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
-                    '{list_id}', str(list_id))
-                request_body = {
-                    'vids': []
-                }
-
-                # Constructing request body
-                for index, row in list_id_sorted.iterrows():
-
-                    if 'vids' in header:
-                        if not pd.isnull(row['vids']):
-                            request_body['vids'].append(str(row['vids']))
-
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
-
-                if response.status_code not in (200, 201):
-                    response_json = response.json()
-                    logging.info(
-                        f'{response_json["message"]}')
-
-        elif endpoint == 'update_contact' or endpoint == 'update_contact_by_email':
-
-            wildcard = 'vid' if endpoint == 'update_contact' else 'email'
-
-            headers = list(data_in.columns)
-            headers.remove(wildcard)
-
-            for index, row in data_in.iterrows():
-
-                logging.info(f'Updating contact [{row[wildcard]}]')
-
-                if row[wildcard] == '' or pd.isnull(row[wildcard]):
-                    logging.error(row)
-                    logging.error(f'[{wildcard}] cannot be empty.')
-                    continue
-
-                request_body = {
-                    'properties': []
-                }
-
-                # Request parameters
-                endpoint_url = ENDPOINT_MAPPING[endpoint]['endpoint'].replace(
-                    f'{{{wildcard}}}', str(row[wildcard]))
-
-                for h in headers:
-                    temp_json = {
-                        'property': h,
-                        'value': row[h] if not pd.isnull(row[h]) else ''
-                    }
-
-                    request_body['properties'].append(temp_json)
-
-                # Requests handler
-                response = requests.post(
-                    f'{self.base_url}{endpoint_url}', headers=self.base_headers,
-                    params=self.base_params, json=request_body)
-
-                if response.status_code not in (200, 201, 204):
-                    response_json = response.json()
-                    logging.info(
-                        f'{response_json["message"]}')
+        for r in required_columns:
+            if r not in table_columns:
+                missing_columns.append(r)
+        if missing_columns:
+            raise UserException(f"Missing columns {missing_columns} in input table {table.name}")
 
 
 """
@@ -390,7 +106,11 @@ class Component(CommonInterface):
 if __name__ == "__main__":
     try:
         comp = Component()
-        comp.run()
+        # this triggers the run method by default and is controlled by the configuration.action parameter
+        comp.execute_action()
+    except UserException as exc:
+        logging.exception(exc)
+        exit(1)
     except Exception as exc:
         logging.exception(exc)
         exit(2)
