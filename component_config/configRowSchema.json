@@ -42,7 +42,7 @@
           "Remove from List"
         ],
         "dependencies": {
-          "hubspot_object": "contact"
+          "endpoint": "contact"
         }
       }
     },
@@ -62,7 +62,7 @@
           "Remove"
         ],
         "dependencies": {
-          "hubspot_object": "company"
+          "endpoint": "company"
         }
       }
     },
@@ -78,7 +78,7 @@
           "Create"
         ],
         "dependencies": {
-          "hubspot_object": "list"
+          "endpoint": "list"
         }
       }
     }
