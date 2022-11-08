@@ -340,7 +340,9 @@ def test_credentials(token: str, auth_type: Literal["API Key", "Private App Toke
         auth_test = get(auth_url, params=auth_param, headers=auth_headers)
         auth_test.raise_for_status()
     except HTTPError as e:
-        raise UserException(f"Cannot reach Hubspot API. Error code: {auth_test.status_code}.") from e
+        raise UserException(f"Cannot reach Hubspot API, please check your credentials. "
+                            f"Error code: {auth_test.status_code}. "
+                            f"Message: {auth_test.json()['message']}") from e
 
     if auth_test.status_code not in (200, 201):
         raise UserException(f"Auth check was not successful. Error: {auth_test.json()}")
@@ -387,7 +389,4 @@ def run(endpoint: str, data_in: csv.DictReader, token: str, auth_type: Literal["
     """
 
     factory = get_factory(endpoint, token, auth_type)
-    # factory.process_requests(data_in)
-    print(factory)
-    print(data_in)
-    logging.info("fake run, requests not processed.")
+    factory.process_requests(data_in)
