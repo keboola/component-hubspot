@@ -5,6 +5,8 @@ import csv
 from requests import Session, get
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
+from requests.exceptions import HTTPError
+
 
 from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
@@ -334,16 +336,14 @@ def test_credentials(token: str, auth_type: Literal["API Key", "Private App Toke
         }
         auth_headers = {'Authorization': f'Bearer {token}'}
 
-    auth_test = get(auth_url, params=auth_param, headers=auth_headers)
+    try:
+        auth_test = get(auth_url, params=auth_param, headers=auth_headers)
+        auth_test.raise_for_status()
+    except HTTPError as e:
+        raise UserException(f"Cannot reach Hubspot API. Error code: {auth_test.status_code}.") from e
+
     if auth_test.status_code not in (200, 201):
-        error_msgs = ["This hapikey doesn't exist.", "Any of the listed authentication credentials are missing"]
-        print(auth_test.json()['message'])
-        if auth_test.json()['message'] in error_msgs:
-            raise UserException('Authentication Error. Please check your API token.')
-        else:
-            err_msg = 'Unexpected error. Please contact support - [{0}] - {1}'.format(
-                auth_test.status_code, auth_test.json()["message"])
-            raise Exception(err_msg)
+        raise UserException(f"Auth check was not successful. Error: {auth_test.json()}")
     return True
 
 
