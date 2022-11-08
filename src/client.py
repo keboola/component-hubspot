@@ -387,4 +387,7 @@ def run(endpoint: str, data_in: csv.DictReader, token: str, auth_type: Literal["
     """
 
     factory = get_factory(endpoint, token, auth_type)
-    factory.process_requests(data_in)
+    # factory.process_requests(data_in)
+    print(factory)
+    print(data_in)
+    logging.info("fake run, requests not processed.")
