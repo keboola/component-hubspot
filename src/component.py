@@ -12,7 +12,7 @@ from endpoint_mapping import ENDPOINT_MAPPING, LEGACY_ENDPOINT_MAPPING_CONVERSIO
 from exceptions import UserException
 
 # configuration variables
-KEY_OBJECT = 'endpoint'
+KEY_OBJECT = 'hubspot_object'
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
