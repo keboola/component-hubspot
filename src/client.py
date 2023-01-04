@@ -7,7 +7,6 @@ from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 from requests.exceptions import HTTPError
 
-
 from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
 from typing import Literal, Union
@@ -64,7 +63,7 @@ class HubSpotClient(ABC):
             None
         """
 
-        if method in ["post", "put", "delete"]:
+        if method in ["post", "put", "delete", "patch"]:
             response = self.s.request(method,
                                       url, headers=self.base_headers,
                                       params=self.base_params, json=request_body)
@@ -313,6 +312,65 @@ class RemoveCompany(HubSpotClient):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
+class CreateDeal(HubSpotClient):
+    """Creates Deal"""
+    def process_requests(self, data_in):
+        for row in data_in:
+            if row["hubspot_owner_id"] == "":
+                raise UserException(f"Cannot process list with empty records in [hubspot_owner_id] column. {row}")
+            request_body = {
+                'properties': {}
+            }
+            for k, v in row.items():
+                request_body['properties'][k] = v
+
+            self.make_request(
+                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
+                request_body=request_body,
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class UpdateDeal(HubSpotClient):
+    """Updates company using Deal ID"""
+    def process_requests(self, data_in):
+        for row in data_in:
+            if row["deal_id"] == "":
+                raise UserException(f"Cannot process list with empty records in [deal_id] column. {row}")
+            request_body = {
+                'properties': {}
+            }
+            for k, v in row.items():
+                if k != "deal_id":
+                    request_body['properties'][k] = v
+
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].replace('{deal_id}', str(row["deal_id"]))
+            url = f'{self.base_url}{endpoint_path}'
+
+            self.make_request(
+                url=url,
+                request_body=request_body,
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class RemoveDeal(HubSpotClient):
+    """Removes Deal using Deal ID"""
+    def process_requests(self, data_in):
+        unique_list_ids = set()
+        for row in data_in:
+            if row["deal_id"] == "":
+                raise UserException(f"Cannot process list with empty records in [deal_id] column. {row}")
+            unique_list_ids.add(row["deal_id"])
+
+        for deal_id in unique_list_ids:
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].replace('{deal_id}', deal_id)
+            url = f'{self.base_url}{endpoint_path}'
+
+            self.make_request(
+                url=url,
+                request_body=None,
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
 def test_credentials(token: str, auth_type: Literal["API Key", "Private App Token"]) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of token.
@@ -367,7 +425,10 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
         "contact_update_by_email": UpdateContactByEmail(endpoint, token, auth_type),
         "company_create": CreateCompany(endpoint, token, auth_type),
         "company_update": UpdateCompany(endpoint, token, auth_type),
-        "company_remove": RemoveCompany(endpoint, token, auth_type)
+        "company_remove": RemoveCompany(endpoint, token, auth_type),
+        "deal_create": CreateDeal(endpoint, token, auth_type),
+        "deal_update": UpdateDeal(endpoint, token, auth_type),
+        "deal_remove": RemoveDeal(endpoint, token, auth_type)
     }
 
     if endpoint in endpoints:
