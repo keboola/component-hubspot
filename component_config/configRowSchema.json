@@ -9,7 +9,8 @@
       "enum": [
         "contact",
         "company",
-        "list"
+        "list",
+        "deal"
       ],
       "type": "string",
       "title": "Object",
@@ -18,7 +19,8 @@
         "enum_titles": [
           "Contact",
           "Company",
-          "List"
+          "List",
+          "Deal"
         ]
       }
     },
@@ -79,6 +81,26 @@
         ],
         "dependencies": {
           "hubspot_object": "list"
+        }
+      }
+    },
+    "deal_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "type": "string",
+      "title": "Object Action",
+      "propertyOrder": 211,
+      "options": {
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ],
+        "dependencies": {
+          "hubspot_object": "deal"
         }
       }
     }
