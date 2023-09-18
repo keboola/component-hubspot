@@ -74,18 +74,6 @@ class HubSpotClient(ABC):
         else:
             raise f"Method {method} not allowed."
 
-        if response.status_code not in (200, 201, 204):
-            response_json = None
-            try:
-                response_json = response.json()
-                logging.error(
-                    f'{response.text} - {response_json["message"]} - {request_body["properties"]}')
-            except KeyError:
-                raise UserException(f"Error: {response_json['message']}")
-            except Exception as e:
-                logging.error(response.text)
-                raise ValueError(f"Unresolvable error: {e} with response {response}.")
-
 
 class CreateContact(HubSpotClient):
     """Creates contacts"""
