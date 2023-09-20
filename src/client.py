@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import logging
 import csv
 
 from requests import Session, get
@@ -67,20 +66,12 @@ class HubSpotClient(ABC):
             response = self.s.request(method,
                                       url, headers=self.base_headers,
                                       params=self.base_params, json=request_body)
+            try:
+                response.raise_for_status()
+            except HTTPError as e:
+                raise UserException(f"Cannot process record {request_body}, error: {e}")
         else:
             raise f"Method {method} not allowed."
-
-        if response.status_code not in (200, 201, 204):
-            response_json = None
-            try:
-                response_json = response.json()
-                logging.error(
-                    f'{response.text} - {response_json["message"]} - {request_body["properties"]}')
-            except KeyError:
-                raise UserException(f"Error: {response_json['message']}")
-            except Exception as e:
-                logging.error(response.text)
-                raise ValueError(f"Unresolvable error: {e} with response {response}.")
 
 
 class CreateContact(HubSpotClient):
