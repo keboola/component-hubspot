@@ -10,6 +10,8 @@ from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
 from typing import Literal, Union
 
+import logging
+
 
 class HubSpotClient(ABC):
     """Template for classes handling communication with Hubspot API"""
@@ -205,6 +207,42 @@ class UpdateContact(HubSpotClient):
                 url=f'{self.base_url}{endpoint_path}',
                 request_body=request_body,
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class UpdateContactBatch(HubSpotClient):
+    """Updates contacts"""
+
+    def process_requests(self, data_in):
+        processed_rows = 0
+        inputs = []
+        for row in data_in:
+            processed_rows += 1
+            if row["vid"] == "":
+                raise UserException(f"Cannot process list with empty records in [vid] column. {row}")
+            properties = {}
+            for k, v in row.items():
+                if k != "vid":
+                    properties[k] = str(v)
+
+            inputs.append({"id": row["vid"], "properties": properties})
+            if processed_rows % 100 == 0 and len(inputs) != 0:
+                self.make_batch_request(inputs)
+                logging.info(f"Processed {processed_rows} contacts.")
+                inputs = []
+
+        if len(inputs) != 0:
+            self.make_batch_request(inputs)
+            logging.info(f"Processed {processed_rows} contacts.\nAll contacts are updated.")
+
+    def make_batch_request(self, inputs):
+        endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint']
+        request_body = {
+            "inputs": inputs
+        }
+        self.make_request(
+            url=f'{self.base_url}{endpoint_path}',
+            request_body=request_body,
+            method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class UpdateContactByEmail(HubSpotClient):
@@ -413,6 +451,7 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
         "contact_add_to_list": AddContactToList(endpoint, token, auth_type),
         "contact_remove_from_list": RemoveContactFromList(endpoint, token, auth_type),
         "contact_update": UpdateContact(endpoint, token, auth_type),
+        "contact_update_batch": UpdateContactBatch(endpoint, token, auth_type),
         "contact_update_by_email": UpdateContactByEmail(endpoint, token, auth_type),
         "company_create": CreateCompany(endpoint, token, auth_type),
         "company_update": UpdateCompany(endpoint, token, auth_type),
