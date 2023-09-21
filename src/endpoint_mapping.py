@@ -24,6 +24,11 @@ ENDPOINT_MAPPING = {
         'required_column': ['vid'],
         'method': 'post'
     },
+    'contact_update_batch': {
+        'endpoint': 'crm/v3/objects/contacts/batch/update',
+        'required_column': ['vid'],
+        'method': 'post'
+    },
     'contact_update_by_email': {
         'endpoint': 'contacts/v1/contact/email/{email}/profile',
         'required_column': ['email'],
