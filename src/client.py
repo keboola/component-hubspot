@@ -69,7 +69,7 @@ class HubSpotClient(ABC):
             try:
                 response.raise_for_status()
             except HTTPError as e:
-                raise UserException(f"Cannot process record {request_body}, error: {e}")
+                raise UserException(f"Cannot process record {request_body}, error: {e}, response {response.content}")
         else:
             raise f"Method {method} not allowed."
 
