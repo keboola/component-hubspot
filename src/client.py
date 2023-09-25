@@ -4,7 +4,7 @@ import csv
 from requests import Session, get
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
-from requests.exceptions import HTTPError
+from requests.exceptions import RequestException
 
 from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
@@ -70,10 +70,13 @@ class HubSpotClient(ABC):
                                       params=self.base_params, json=request_body)
             try:
                 response.raise_for_status()
-            except HTTPError as e:
-                raise UserException(f"Cannot process record {request_body}, error: {e}, response {response.content}")
+            except RequestException as e:
+                response_content = response.content if response else None
+                raise UserException(
+                    f"Cannot process record {request_body}, HTTP error: {e}, response content: {response_content}"
+                )
         else:
-            raise f"Method {method} not allowed."
+            raise UserException(f"Method {method} not allowed.")
 
 
 class CreateContact(HubSpotClient):
