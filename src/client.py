@@ -69,7 +69,7 @@ class HubSpotClient(ABC):
             try:
                 response.raise_for_status()
             except RequestException as e:
-                response_content = response.content if response else None
+                response_content = response.content if response is not None else None
                 raise UserException(
                     f"Cannot process record {request_body}, HTTP error: {e}, response content: {response_content}"
                 )
