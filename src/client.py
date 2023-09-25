@@ -10,8 +10,10 @@ from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
 from typing import Literal, Union
 
+import logging
 
 HUBSPOT_BATCH_LIMIT = 100
+LOGGING_LIMIT = 1000
 
 
 class HubSpotClient(ABC):
@@ -114,6 +116,9 @@ class CreateContact(HubSpotClient):
             if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
                 self.make_batch_request(inputs)
                 inputs = []
+
+            if processed_rows % LOGGING_LIMIT == 0:
+                logging.info(f'Created {processed_rows} contacts.')
 
         if len(inputs) != 0:
             self.make_batch_request(inputs)
@@ -228,6 +233,9 @@ class UpdateContact(HubSpotClient):
                 self.make_batch_request(inputs)
                 inputs = []
 
+            if processed_rows % LOGGING_LIMIT == 0:
+                logging.info(f'Updated {processed_rows} contacts.')
+
         if len(inputs) != 0:
             self.make_batch_request(inputs)
 
@@ -277,6 +285,9 @@ class CreateCompany(HubSpotClient):
                 self.make_batch_request(inputs)
                 inputs = []
 
+            if processed_rows % LOGGING_LIMIT == 0:
+                logging.info(f'Created {processed_rows} companies.')
+
         if len(inputs) != 0:
             self.make_batch_request(inputs)
 
@@ -304,6 +315,9 @@ class UpdateCompany(HubSpotClient):
             if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
                 self.make_batch_request(inputs)
                 inputs = []
+
+            if processed_rows % LOGGING_LIMIT == 0:
+                logging.info(f'Updated {processed_rows} companies.')
 
         if len(inputs) != 0:
             self.make_batch_request(inputs)
