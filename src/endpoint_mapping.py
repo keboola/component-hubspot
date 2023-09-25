@@ -35,9 +35,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'company_update': {
-        'endpoint': 'companies/v2/companies/{company_id}',
+        'endpoint': 'crm/v3/objects/companies/batch/update',
         'required_column': ['company_id'],
-        'method': 'put'
+        'method': 'post'
     },
     'company_remove': {
         'endpoint': 'companies/v2/companies/{company_id}',
