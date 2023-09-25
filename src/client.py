@@ -259,23 +259,23 @@ class CreateCompany(HubSpotClient):
     """Creates company"""
 
     def process_requests(self, data_in):
+        processed_rows = 0
+        inputs = []
         for row in data_in:
+            processed_rows += 1
             if row["name"] == "":
                 raise UserException(f"Cannot process list with empty records in [name] column. {row}")
-            request_body = {
-                'properties': []
-            }
+            properties = {}
             for k, v in row.items():
-                tmp = {
-                    "name": k,
-                    "value": str(v)
-                }
-                request_body['properties'].append(tmp)
+                properties[k] = str(v)
 
-            self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
-                request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            inputs.append({"properties": properties})
+            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
+                self.make_batch_request(inputs)
+                inputs = []
+
+        if len(inputs) != 0:
+            self.make_batch_request(inputs)
 
 
 class UpdateCompany(HubSpotClient):
