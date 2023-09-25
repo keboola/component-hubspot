@@ -4,6 +4,11 @@ ENDPOINT_MAPPING = {
         'required_column': [],
         'method': 'post'
     },
+    'contact_create_batch': {
+        'endpoint': 'crm/v3/objects/contacts/batch/create',
+        'required_column': [],
+        'method': 'post'
+    },
     'list_create': {
         'endpoint': 'contacts/v1/lists',
         'required_column': ['name'],
