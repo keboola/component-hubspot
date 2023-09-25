@@ -1,10 +1,5 @@
 ENDPOINT_MAPPING = {
     'contact_create': {
-        'endpoint': 'contacts/v1/contact',
-        'required_column': [],
-        'method': 'post'
-    },
-    'contact_create_batch': {
         'endpoint': 'crm/v3/objects/contacts/batch/create',
         'required_column': [],
         'method': 'post'
@@ -25,11 +20,6 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'contact_update': {
-        'endpoint': 'contacts/v1/contact/vid/{vid}/profile',
-        'required_column': ['vid'],
-        'method': 'post'
-    },
-    'contact_update_batch': {
         'endpoint': 'crm/v3/objects/contacts/batch/update',
         'required_column': ['vid'],
         'method': 'post'
