@@ -220,7 +220,10 @@ class UpdateContact(HubSpotClient):
                 if k != "vid":
                     properties[k] = str(v)
 
-            inputs.append({"id": row["vid"], "properties": properties})
+            inputs.append({
+                "id": row["vid"],
+                "properties": properties
+            })
             if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
                 self.make_batch_request(inputs)
                 inputs = []
@@ -282,27 +285,28 @@ class UpdateCompany(HubSpotClient):
     """Updates company using company ID"""
 
     def process_requests(self, data_in):
+        processed_rows = 0
+        inputs = []
         for row in data_in:
+            processed_rows += 1
             if row["company_id"] == "":
                 raise UserException(f"Cannot process list with empty records in [company_id] column. {row}")
-            request_body = {
-                'properties': []
-            }
+
+            properties = {}
             for k, v in row.items():
                 if k != "company_id":
-                    tmp = {
-                        'name': k,
-                        'value': str(v)
-                    }
-                    request_body['properties'].append(tmp)
+                    properties[k] = str(v)
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].replace('{company_id}', str(row["company_id"]))
-            url = f'{self.base_url}{endpoint_path}'
+            inputs.append({
+                "id": row["company_id"],
+                "properties": properties
+            })
+            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
+                self.make_batch_request(inputs)
+                inputs = []
 
-            self.make_request(
-                url=url,
-                request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+        if len(inputs) != 0:
+            self.make_batch_request(inputs)
 
 
 class RemoveCompany(HubSpotClient):
