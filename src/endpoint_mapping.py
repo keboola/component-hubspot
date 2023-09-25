@@ -30,7 +30,7 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'company_create': {
-        'endpoint': 'companies/v2/companies',
+        'endpoint': 'crm/v3/objects/companies/batch/create',
         'required_column': ['name'],
         'method': 'post'
     },
