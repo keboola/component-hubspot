@@ -4,7 +4,7 @@ import csv
 from requests import Session, get
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
-from requests.exceptions import RequestException
+from requests.exceptions import RequestException, HTTPError
 
 from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
