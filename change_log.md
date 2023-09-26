@@ -1,3 +1,7 @@
+**0.1.2**
+
+- use batch request processing for Contact and Companies object, for create/update actions
+
 **0.1.1**
 
 - fix requirements

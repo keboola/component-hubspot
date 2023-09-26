@@ -4,11 +4,16 @@ import csv
 from requests import Session, get
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
-from requests.exceptions import HTTPError
+from requests.exceptions import RequestException
 
 from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
 from typing import Literal, Union
+
+import logging
+
+HUBSPOT_BATCH_LIMIT = 100
+LOGGING_LIMIT = 1000
 
 
 class HubSpotClient(ABC):
@@ -68,31 +73,55 @@ class HubSpotClient(ABC):
                                       params=self.base_params, json=request_body)
             try:
                 response.raise_for_status()
-            except HTTPError as e:
-                raise UserException(f"Cannot process record {request_body}, error: {e}")
+            except RequestException as e:
+                response_content = response.content if response is not None else None
+                raise UserException(
+                    f"Cannot process record {request_body}, HTTP error: {e}, response content: {response_content}"
+                )
         else:
-            raise f"Method {method} not allowed."
+            raise UserException(f"Method {method} not allowed.")
+
+    def make_batch_request(self, inputs: list):
+        """
+        Makes a batch request with the HubSpot specified data body.
+        Args:
+            inputs: list of individual HubsSpot objects to be created/updated
+
+        Returns:
+            None
+        """
+
+        request_body = {
+            "inputs": inputs
+        }
+        self.make_request(
+            url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
+            request_body=request_body,
+            method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class CreateContact(HubSpotClient):
-    """Creates contacts"""
+    """Creates contacts in batches"""
 
     def process_requests(self, data_in):
+        processed_rows = 0
+        inputs = []
         for row in data_in:
-            request_body = {
-                'properties': []
-            }
+            processed_rows += 1
+            properties = {}
             for k, v in row.items():
-                tmp = {
-                    "property": k,
-                    "value": str(v)
-                }
-                request_body['properties'].append(tmp)
+                properties[k] = str(v)
 
-            self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
-                request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            inputs.append({"properties": properties})
+            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
+                self.make_batch_request(inputs)
+                inputs = []
+
+            if processed_rows % LOGGING_LIMIT == 0:
+                logging.info(f'Created {processed_rows} contacts.')
+
+        if len(inputs) != 0:
+            self.make_batch_request(inputs)
 
 
 class CreateList(HubSpotClient):
@@ -185,26 +214,30 @@ class UpdateContact(HubSpotClient):
     """Updates contacts"""
 
     def process_requests(self, data_in):
+        processed_rows = 0
+        inputs = []
         for row in data_in:
+            processed_rows += 1
             if row["vid"] == "":
                 raise UserException(f"Cannot process list with empty records in [vid] column. {row}")
-            request_body = {
-                'properties': []
-            }
+            properties = {}
             for k, v in row.items():
                 if k != "vid":
-                    tmp = {
-                        'property': k,
-                        'value': str(v)
-                    }
-                    request_body['properties'].append(tmp)
+                    properties[k] = str(v)
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].replace('{vid}', str(row["vid"]))
+            inputs.append({
+                "id": row["vid"],
+                "properties": properties
+            })
+            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
+                self.make_batch_request(inputs)
+                inputs = []
 
-            self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
-                request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            if processed_rows % LOGGING_LIMIT == 0:
+                logging.info(f'Updated {processed_rows} contacts.')
+
+        if len(inputs) != 0:
+            self.make_batch_request(inputs)
 
 
 class UpdateContactByEmail(HubSpotClient):
@@ -237,50 +270,57 @@ class CreateCompany(HubSpotClient):
     """Creates company"""
 
     def process_requests(self, data_in):
+        processed_rows = 0
+        inputs = []
         for row in data_in:
+            processed_rows += 1
             if row["name"] == "":
                 raise UserException(f"Cannot process list with empty records in [name] column. {row}")
-            request_body = {
-                'properties': []
-            }
+            properties = {}
             for k, v in row.items():
-                tmp = {
-                    "name": k,
-                    "value": str(v)
-                }
-                request_body['properties'].append(tmp)
+                properties[k] = str(v)
 
-            self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
-                request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            inputs.append({"properties": properties})
+            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
+                self.make_batch_request(inputs)
+                inputs = []
+
+            if processed_rows % LOGGING_LIMIT == 0:
+                logging.info(f'Created {processed_rows} companies.')
+
+        if len(inputs) != 0:
+            self.make_batch_request(inputs)
 
 
 class UpdateCompany(HubSpotClient):
     """Updates company using company ID"""
 
     def process_requests(self, data_in):
+        processed_rows = 0
+        inputs = []
         for row in data_in:
+            processed_rows += 1
             if row["company_id"] == "":
                 raise UserException(f"Cannot process list with empty records in [company_id] column. {row}")
-            request_body = {
-                'properties': []
-            }
+
+            properties = {}
             for k, v in row.items():
                 if k != "company_id":
-                    tmp = {
-                        'name': k,
-                        'value': str(v)
-                    }
-                    request_body['properties'].append(tmp)
+                    properties[k] = str(v)
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].replace('{company_id}', str(row["company_id"]))
-            url = f'{self.base_url}{endpoint_path}'
+            inputs.append({
+                "id": row["company_id"],
+                "properties": properties
+            })
+            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
+                self.make_batch_request(inputs)
+                inputs = []
 
-            self.make_request(
-                url=url,
-                request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            if processed_rows % LOGGING_LIMIT == 0:
+                logging.info(f'Updated {processed_rows} companies.')
+
+        if len(inputs) != 0:
+            self.make_batch_request(inputs)
 
 
 class RemoveCompany(HubSpotClient):
