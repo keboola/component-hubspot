@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import csv
+from functools import wraps
 
 from requests import Session, get
 from requests.adapters import HTTPAdapter
@@ -12,8 +13,26 @@ from typing import Literal, Union
 
 import logging
 
-HUBSPOT_BATCH_LIMIT = 100
-LOGGING_LIMIT = 1000
+BATCH_LIMIT = 100
+LOGGING_LIMIT = 500
+
+
+def batched(batch_size, log_size):
+    def wrapper(func):
+        @wraps(func)
+        def inner(self, data):
+            data_batch = []
+            for i, record in enumerate(data, start=1):
+                data_batch.append(record)
+                if not i % batch_size:
+                    func(self, data_batch)
+                    data_batch = []
+                if not i % log_size:
+                    logging.info(f'Processed {i} rows.')
+            if data_batch:
+                func(self, data_batch)
+        return inner
+    return wrapper
 
 
 class HubSpotClient(ABC):
@@ -103,25 +122,15 @@ class HubSpotClient(ABC):
 class CreateContact(HubSpotClient):
     """Creates contacts in batches"""
 
+    @batched(BATCH_LIMIT, LOGGING_LIMIT)
     def process_requests(self, data_in):
-        processed_rows = 0
         inputs = []
         for row in data_in:
-            processed_rows += 1
             properties = {}
             for k, v in row.items():
                 properties[k] = str(v)
-
             inputs.append({"properties": properties})
-            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
-                self.make_batch_request(inputs)
-                inputs = []
-
-            if processed_rows % LOGGING_LIMIT == 0:
-                logging.info(f'Created {processed_rows} contacts.')
-
-        if len(inputs) != 0:
-            self.make_batch_request(inputs)
+        self.make_batch_request(inputs)
 
 
 class CreateList(HubSpotClient):
@@ -213,11 +222,10 @@ class RemoveContactFromList(HubSpotClient):
 class UpdateContact(HubSpotClient):
     """Updates contacts"""
 
+    @batched(BATCH_LIMIT, LOGGING_LIMIT)
     def process_requests(self, data_in):
-        processed_rows = 0
         inputs = []
         for row in data_in:
-            processed_rows += 1
             if row["vid"] == "":
                 raise UserException(f"Cannot process list with empty records in [vid] column. {row}")
             properties = {}
@@ -229,15 +237,7 @@ class UpdateContact(HubSpotClient):
                 "id": row["vid"],
                 "properties": properties
             })
-            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
-                self.make_batch_request(inputs)
-                inputs = []
-
-            if processed_rows % LOGGING_LIMIT == 0:
-                logging.info(f'Updated {processed_rows} contacts.')
-
-        if len(inputs) != 0:
-            self.make_batch_request(inputs)
+        self.make_batch_request(inputs)
 
 
 class UpdateContactByEmail(HubSpotClient):
@@ -269,37 +269,26 @@ class UpdateContactByEmail(HubSpotClient):
 class CreateCompany(HubSpotClient):
     """Creates company"""
 
+    @batched(BATCH_LIMIT, LOGGING_LIMIT)
     def process_requests(self, data_in):
-        processed_rows = 0
         inputs = []
         for row in data_in:
-            processed_rows += 1
             if row["name"] == "":
                 raise UserException(f"Cannot process list with empty records in [name] column. {row}")
             properties = {}
             for k, v in row.items():
                 properties[k] = str(v)
-
             inputs.append({"properties": properties})
-            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
-                self.make_batch_request(inputs)
-                inputs = []
-
-            if processed_rows % LOGGING_LIMIT == 0:
-                logging.info(f'Created {processed_rows} companies.')
-
-        if len(inputs) != 0:
-            self.make_batch_request(inputs)
+        self.make_batch_request(inputs)
 
 
 class UpdateCompany(HubSpotClient):
     """Updates company using company ID"""
 
+    @batched(BATCH_LIMIT, LOGGING_LIMIT)
     def process_requests(self, data_in):
-        processed_rows = 0
         inputs = []
         for row in data_in:
-            processed_rows += 1
             if row["company_id"] == "":
                 raise UserException(f"Cannot process list with empty records in [company_id] column. {row}")
 
@@ -312,15 +301,7 @@ class UpdateCompany(HubSpotClient):
                 "id": row["company_id"],
                 "properties": properties
             })
-            if processed_rows % HUBSPOT_BATCH_LIMIT == 0 and len(inputs) != 0:
-                self.make_batch_request(inputs)
-                inputs = []
-
-            if processed_rows % LOGGING_LIMIT == 0:
-                logging.info(f'Updated {processed_rows} companies.')
-
-        if len(inputs) != 0:
-            self.make_batch_request(inputs)
+        self.make_batch_request(inputs)
 
 
 class RemoveCompany(HubSpotClient):
@@ -448,22 +429,22 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
     """
 
     endpoints = {
-        "contact_create": CreateContact(endpoint, token, auth_type),
-        "list_create": CreateList(endpoint, token, auth_type),
-        "contact_add_to_list": AddContactToList(endpoint, token, auth_type),
-        "contact_remove_from_list": RemoveContactFromList(endpoint, token, auth_type),
-        "contact_update": UpdateContact(endpoint, token, auth_type),
-        "contact_update_by_email": UpdateContactByEmail(endpoint, token, auth_type),
-        "company_create": CreateCompany(endpoint, token, auth_type),
-        "company_update": UpdateCompany(endpoint, token, auth_type),
-        "company_remove": RemoveCompany(endpoint, token, auth_type),
-        "deal_create": CreateDeal(endpoint, token, auth_type),
-        "deal_update": UpdateDeal(endpoint, token, auth_type),
-        "deal_remove": RemoveDeal(endpoint, token, auth_type)
+        "contact_create": CreateContact,
+        "list_create": CreateList,
+        "contact_add_to_list": AddContactToList,
+        "contact_remove_from_list": RemoveContactFromList,
+        "contact_update": UpdateContact,
+        "contact_update_by_email": UpdateContactByEmail,
+        "company_create": CreateCompany,
+        "company_update": UpdateCompany,
+        "company_remove": RemoveCompany,
+        "deal_create": CreateDeal,
+        "deal_update": UpdateDeal,
+        "deal_remove": RemoveDeal
     }
 
     if endpoint in endpoints:
-        return endpoints[endpoint]
+        return endpoints[endpoint](endpoint, token, auth_type)
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
