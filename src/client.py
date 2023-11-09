@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import csv
 from functools import wraps
+import time
 
 from requests import Session, get
 from requests.adapters import HTTPAdapter
@@ -13,11 +14,12 @@ from typing import Literal, Union
 
 import logging
 
-BATCH_LIMIT = 100
-LOGGING_LIMIT = 500
+BATCH_SIZE = 100
+LOGGING_INTERVAL = 200
+SLEEP_INTERVAL = 0.1  # https://developers.hubspot.com/docs/api/usage-details#rate-limits
 
 
-def batched(batch_size, log_size):
+def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_interval=SLEEP_INTERVAL):
     def wrapper(func):
         @wraps(func)
         def inner(self, data):
@@ -26,8 +28,9 @@ def batched(batch_size, log_size):
                 data_batch.append(record)
                 if not i % batch_size:
                     func(self, data_batch)
+                    time.sleep(sleep_interval)
                     data_batch = []
-                if not i % log_size:
+                if not i % logging_interval:
                     logging.info(f'Processed {i} rows.')
             if data_batch:
                 func(self, data_batch)
@@ -122,7 +125,7 @@ class HubSpotClient(ABC):
 class CreateContact(HubSpotClient):
     """Creates contacts in batches"""
 
-    @batched(BATCH_LIMIT, LOGGING_LIMIT)
+    @batched()
     def process_requests(self, data_in):
         inputs = []
         for row in data_in:
@@ -222,7 +225,7 @@ class RemoveContactFromList(HubSpotClient):
 class UpdateContact(HubSpotClient):
     """Updates contacts"""
 
-    @batched(BATCH_LIMIT, LOGGING_LIMIT)
+    @batched()
     def process_requests(self, data_in):
         inputs = []
         for row in data_in:
@@ -269,7 +272,7 @@ class UpdateContactByEmail(HubSpotClient):
 class CreateCompany(HubSpotClient):
     """Creates company"""
 
-    @batched(BATCH_LIMIT, LOGGING_LIMIT)
+    @batched()
     def process_requests(self, data_in):
         inputs = []
         for row in data_in:
@@ -285,7 +288,7 @@ class CreateCompany(HubSpotClient):
 class UpdateCompany(HubSpotClient):
     """Updates company using company ID"""
 
-    @batched(BATCH_LIMIT, LOGGING_LIMIT)
+    @batched()
     def process_requests(self, data_in):
         inputs = []
         for row in data_in:
