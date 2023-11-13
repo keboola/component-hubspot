@@ -45,14 +45,14 @@ ENDPOINT_MAPPING = {
         'method': 'delete'
     },
     'deal_create': {
-        'endpoint': 'crm/v3/objects/deals',
+        'endpoint': 'crm/v3/objects/deals/batch/create',
         'required_column': ['hubspot_owner_id'],
         'method': 'post'
     },
     'deal_update': {
-        'endpoint': 'crm/v3/objects/deals/{deal_id}',
+        'endpoint': 'crm/v3/objects/deals/batch/update',
         'required_column': ['deal_id'],
-        'method': 'patch'
+        'method': 'post'
     },
     'deal_remove': {
         'endpoint': 'crm/v3/objects/deals/{deal_id}',

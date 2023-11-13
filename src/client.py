@@ -328,43 +328,38 @@ class RemoveCompany(HubSpotClient):
 
 
 class CreateDeal(HubSpotClient):
-    """Creates Deal"""
-    def process_requests(self, data_in):
-        for row in data_in:
-            if row["hubspot_owner_id"] == "":
-                raise UserException(f"Cannot process list with empty records in [hubspot_owner_id] column. {row}")
-            request_body = {
-                'properties': {}
-            }
-            for k, v in row.items():
-                request_body['properties'][k] = v
+    """Creates deals"""
 
-            self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
-                request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+    @batched()
+    def process_requests(self, data_in):
+        # /crm/v3/objects/deals/batch/create
+        inputs = []
+        for row in data_in:
+            if not row["hubspot_owner_id"]:
+                raise UserException(f"Cannot process deal with empty record in [hubspot_owner_id] column. {row}")
+
+            inputs.append({"properties": row})
+        self.make_batch_request(inputs)
 
 
 class UpdateDeal(HubSpotClient):
     """Updates company using Deal ID"""
+
+    @batched()
     def process_requests(self, data_in):
+        # /crm/v3/objects/deals/batch/update
+        inputs = []
         for row in data_in:
-            if row["deal_id"] == "":
-                raise UserException(f"Cannot process list with empty records in [deal_id] column. {row}")
-            request_body = {
-                'properties': {}
-            }
-            for k, v in row.items():
-                if k != "deal_id":
-                    request_body['properties'][k] = v
+            if not row["deal_id"]:
+                raise UserException(f"Cannot process deal with empty records in [deal_id] column. {row}")
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].replace('{deal_id}', str(row["deal_id"]))
-            url = f'{self.base_url}{endpoint_path}'
-
-            self.make_request(
-                url=url,
-                request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            deal_id = row["deal_id"]
+            del row["deal_id"]
+            inputs.append({
+                "id": deal_id,
+                "properties": row
+            })
+        self.make_batch_request(inputs)
 
 
 class RemoveDeal(HubSpotClient):
