@@ -316,6 +316,59 @@ class RemoveDeal(HubSpotClient):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
+class CreateTicket(HubSpotClient):
+    """Creates tickets"""
+    @batched()
+    def process_requests(self, data_reader):
+        # /crm/v3/objects/tickets/batch/create
+        inputs = []
+        for row in data_reader:
+            if not row["association_id"]:
+                raise UserException(f"Cannot process ticket with empty record in [association_id] column. {row}")
+            associations = [{
+                'to': {'id': str(row.pop('association_id'))},
+                'types': [{
+                    'associationCategory': row.pop('associationsCategory'),
+                    'associationsTypeId': row.pop('associationsTypeId')
+                }]
+            }]
+            inputs.append({"associations": associations, "properties": row})
+        self.make_batch_request(inputs)
+
+
+class UpdateTicket(HubSpotClient):
+    """Updates tickets using Ticket ID"""
+
+    @batched()
+    def process_requests(self, data_reader):
+        # /crm/v3/objects/deals/batch/update
+        inputs = []
+        for row in data_reader:
+            if not row["ticket_id"]:
+                raise UserException(f"Cannot process ticket with empty records in [ticket_id] column. {row}")
+
+            inputs.append({
+                "id": str(row.pop('ticket_id')),
+                "properties": row
+            })
+        self.make_batch_request(inputs)
+
+
+class RemoveTicket(HubSpotClient):
+    """Removes Ticket using Ticket ID"""
+    def process_requests(self, data_reader):
+        ticket_ids = set(row["ticket_id"] for row in data_reader)
+        if '' in ticket_ids:
+            raise UserException(f"Cannot process ticket with empty records in [ticket_id] column.")
+
+        for ticket_id in ticket_ids:
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(ticket_id=ticket_id)
+            self.make_request(
+                url=f'{self.base_url}{endpoint_path}',
+                request_body=None,
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
 def test_credentials(token: str, auth_type: Literal["API Key", "Private App Token"]) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of token.
@@ -368,7 +421,10 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
         "company_remove": RemoveCompany,
         "deal_create": CreateDeal,
         "deal_update": UpdateDeal,
-        "deal_remove": RemoveDeal
+        "deal_remove": RemoveDeal,
+        "ticket_create": CreateTicket,
+        "ticket_update": UpdateTicket,
+        "ticket_remove": RemoveTicket
     }
 
     if endpoint in endpoints:

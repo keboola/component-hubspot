@@ -58,6 +58,21 @@ ENDPOINT_MAPPING = {
         'endpoint': 'crm/v3/objects/deals/{deal_id}',
         'required_column': ['deal_id'],
         'method': 'delete'
+    },
+    'ticket_create': {
+        'endpoint': 'crm/v3/objects/tickets/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'ticket_update': {
+        'endpoint': 'crm/v3/objects/tickets/batch/update',
+        'required_column': ['ticket_id'],
+        'method': 'post'
+    },
+    'ticket_remove': {
+        'endpoint': 'crm/v3/objects/tickets/{ticketId}',
+        'required_column': ['ticket_id'],
+        'method': 'delete'
     }
 }
 
