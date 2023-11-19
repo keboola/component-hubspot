@@ -66,7 +66,7 @@ class Component(ComponentBase):
 
     @property
     def endpoint(self) -> str:
-        if self.hubspot_object in list(LEGACY_ENDPOINT_MAPPING_CONVERSION.keys()):
+        if self.hubspot_object in LEGACY_ENDPOINT_MAPPING_CONVERSION:
             return LEGACY_ENDPOINT_MAPPING_CONVERSION[self.hubspot_object]
         else:
             return f"{self.hubspot_object}_{self.action}"
@@ -92,11 +92,8 @@ class Component(ComponentBase):
         # Comparing this information with the file's manifest
         required_columns = ENDPOINT_MAPPING[self.endpoint]["required_column"]
         table_columns = table.columns
-        missing_columns = []
+        missing_columns = [column for column in required_columns if column not in table_columns]
 
-        for r in required_columns:
-            if r not in table_columns:
-                missing_columns.append(r)
         if missing_columns:
             raise UserException(f"Missing columns {missing_columns} in input table {table.name}")
 
