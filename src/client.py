@@ -258,7 +258,7 @@ class RemoveCompany(HubSpotClient):
     def process_requests(self, data_reader):
         company_ids = set(row['company_id'] for row in data_reader)
         if '' in company_ids:
-            UserException(f"Cannot process list with empty records in [company_id] column.")
+            UserException("Cannot process list with empty records in [company_id] column.")
 
         for company_id in company_ids:
             endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(company_id=company_id)
@@ -306,7 +306,7 @@ class RemoveDeal(HubSpotClient):
     def process_requests(self, data_reader):
         deal_ids = set(row["deal_id"] for row in data_reader)
         if '' in deal_ids:
-            raise UserException(f"Cannot process deal with empty records in [deal_id] column.")
+            raise UserException("Cannot process deal with empty records in [deal_id] column.")
 
         for deal_id in deal_ids:
             endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(deal_id=deal_id)
@@ -359,7 +359,7 @@ class RemoveTicket(HubSpotClient):
     def process_requests(self, data_reader):
         ticket_ids = set(row["ticket_id"] for row in data_reader)
         if '' in ticket_ids:
-            raise UserException(f"Cannot process ticket with empty records in [ticket_id] column.")
+            raise UserException("Cannot process ticket with empty records in [ticket_id] column.")
 
         for ticket_id in ticket_ids:
             endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(ticket_id=ticket_id)
@@ -432,7 +432,8 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
-def run(endpoint: str, data_reader: csv.DictReader, token: str, auth_type: Literal["API Key", "Private App Token"]) -> None:
+def run(endpoint: str, data_reader: csv.DictReader, token: str,
+        auth_type: Literal["API Key", "Private App Token"]) -> None:
     """
     Main entrypoint to call.
     Args:
