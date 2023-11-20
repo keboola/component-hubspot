@@ -61,7 +61,7 @@ ENDPOINT_MAPPING = {
     },
     'ticket_create': {
         'endpoint': 'crm/v3/objects/tickets/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'ticket_update': {
@@ -76,7 +76,7 @@ ENDPOINT_MAPPING = {
     },
     'product_create': {
         'endpoint': 'crm/v3/objects/products/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'product_update': {
@@ -91,7 +91,7 @@ ENDPOINT_MAPPING = {
     },
     'quote_create': {
         'endpoint': 'crm/v3/objects/quotes/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'quote_update': {
@@ -106,7 +106,7 @@ ENDPOINT_MAPPING = {
     },
     'line_item_create': {
         'endpoint': 'crm/v3/objects/line_items/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'line_item_update': {
@@ -121,7 +121,7 @@ ENDPOINT_MAPPING = {
     },
     'tax_create': {
         'endpoint': 'crm/v3/objects/taxes/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'tax_update': {
@@ -136,7 +136,7 @@ ENDPOINT_MAPPING = {
     },
     'call_create': {
         'endpoint': 'crm/v3/objects/calls/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'call_update': {
@@ -151,7 +151,7 @@ ENDPOINT_MAPPING = {
     },
     'communication_create': {
         'endpoint': 'crm/v3/objects/communications/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'communication_update': {
@@ -166,7 +166,7 @@ ENDPOINT_MAPPING = {
     },
     'email_create': {
         'endpoint': 'crm/v3/objects/emails/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'email_update': {
@@ -181,7 +181,7 @@ ENDPOINT_MAPPING = {
     },
     'meeting_create': {
         'endpoint': 'crm/v3/objects/meetings/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'meeting_update': {
@@ -196,7 +196,7 @@ ENDPOINT_MAPPING = {
     },
     'note_create': {
         'endpoint': 'crm/v3/objects/notes/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'note_update': {
@@ -211,7 +211,7 @@ ENDPOINT_MAPPING = {
     },
     'postal_mail_create': {
         'endpoint': 'crm/v3/objects/postal_mail/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'postal_mail_update': {
@@ -226,7 +226,7 @@ ENDPOINT_MAPPING = {
     },
     'task_create': {
         'endpoint': 'crm/v3/objects/tasks/batch/create',
-        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'required_column': ['association_id', 'association_category', 'association_type_id'],
         'method': 'post'
     },
     'task_update': {
