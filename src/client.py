@@ -465,24 +465,17 @@ class UpdateTask(UpdateObject):
 
 
 class RemoveObject(HubSpotClient, ABC):
-    """Parent class to CRM objects - removes CRM Object using Object ID"""
+    """Parent class to CRM/engagement objects - removes CRM/engagement Object using Object ID"""
 
     @property
     @abstractmethod
     def object_type(self) -> str:
         pass
 
+    @batched()
     def process_requests(self, data_reader):
-        object_ids = set(row[f"{self.object_type}_id"] for row in data_reader)
-        if '' in object_ids:
-            raise UserException(f"Cannot process {self.object_type} with empty records in [{self.object_type}] column.")
-
-        for object_id in object_ids:
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(object_id)
-            self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
-                request_body=None,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+        inputs = [{"id": str(row[f"{self.object_type}_id"])} for row in data_reader]
+        self.make_batch_request(inputs)
 
 
 class RemoveCompany(RemoveObject):

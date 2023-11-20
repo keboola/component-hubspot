@@ -40,9 +40,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'company_remove': {
-        'endpoint': 'companies/v2/companies/{}',
+        'endpoint': 'crm/v3/objects/companies/batch/archive',
         'required_column': ['company_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'deal_create': {
         'endpoint': 'crm/v3/objects/deals/batch/create',
@@ -55,9 +55,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'deal_remove': {
-        'endpoint': 'crm/v3/objects/deals/{}',
+        'endpoint': 'crm/v3/objects/deals/batch/archive',
         'required_column': ['deal_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'ticket_create': {
         'endpoint': 'crm/v3/objects/tickets/batch/create',
@@ -70,9 +70,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'ticket_remove': {
-        'endpoint': 'crm/v3/objects/tickets/{}',
+        'endpoint': 'crm/v3/objects/tickets/batch/archive',
         'required_column': ['ticket_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'product_create': {
         'endpoint': 'crm/v3/objects/products/batch/create',
@@ -85,9 +85,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'product_remove': {
-        'endpoint': 'crm/v3/objects/products/{}',
+        'endpoint': 'crm/v3/objects/products/batch/archive',
         'required_column': ['product_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'quote_create': {
         'endpoint': 'crm/v3/objects/quotes/batch/create',
@@ -100,9 +100,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'quote_remove': {
-        'endpoint': 'crm/v3/objects/quotes/{}',
+        'endpoint': 'crm/v3/objects/quotes/batch/archive',
         'required_column': ['quote_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'line_item_create': {
         'endpoint': 'crm/v3/objects/line_items/batch/create',
@@ -115,9 +115,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'line_item_remove': {
-        'endpoint': 'crm/v3/objects/line_items/{}',
+        'endpoint': 'crm/v3/objects/line_items/batch/archive',
         'required_column': ['line_item_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'tax_create': {
         'endpoint': 'crm/v3/objects/taxes/batch/create',
@@ -130,9 +130,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'tax_remove': {
-        'endpoint': 'crm/v3/objects/taxes/{}',
+        'endpoint': 'crm/v3/objects/taxes/batch/archive',
         'required_column': ['tax_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'call_create': {
         'endpoint': 'crm/v3/objects/calls/batch/create',
@@ -145,9 +145,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'call_remove': {
-        'endpoint': 'crm/v3/objects/calls/{}',
+        'endpoint': 'crm/v3/objects/calls/batch/archive',
         'required_column': ['call_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'communication_create': {
         'endpoint': 'crm/v3/objects/communications/batch/create',
@@ -160,9 +160,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'communication_remove': {
-        'endpoint': 'crm/v3/objects/communications/{}',
+        'endpoint': 'crm/v3/objects/communications/batch/archive',
         'required_column': ['communication_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'email_create': {
         'endpoint': 'crm/v3/objects/emails/batch/create',
@@ -175,9 +175,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'email_remove': {
-        'endpoint': 'crm/v3/objects/emails/{}',
+        'endpoint': 'crm/v3/objects/emails/batch/archive',
         'required_column': ['email_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'meeting_create': {
         'endpoint': 'crm/v3/objects/meetings/batch/create',
@@ -190,9 +190,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'meeting_remove': {
-        'endpoint': 'crm/v3/objects/meetings/{}',
+        'endpoint': 'crm/v3/objects/meetings/batch/archive',
         'required_column': ['meeting_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'note_create': {
         'endpoint': 'crm/v3/objects/notes/batch/create',
@@ -205,9 +205,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'note_remove': {
-        'endpoint': 'crm/v3/objects/notes/{}',
+        'endpoint': 'crm/v3/objects/notes/batch/archive',
         'required_column': ['note_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'postal_mail_create': {
         'endpoint': 'crm/v3/objects/postal_mail/batch/create',
@@ -220,9 +220,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'postal_mail_remove': {
-        'endpoint': 'crm/v3/objects/postal_mail/{}',
+        'endpoint': 'crm/v3/objects/postal_mail/batch/archive',
         'required_column': ['postal_mail_id'],
-        'method': 'delete'
+        'method': 'post'
     },
     'task_create': {
         'endpoint': 'crm/v3/objects/tasks/batch/create',
@@ -235,9 +235,9 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'task_remove': {
-        'endpoint': 'crm/v3/objects/tasks/{}',
+        'endpoint': 'crm/v3/objects/tasks/batch/archive',
         'required_column': ['task_id'],
-        'method': 'delete'
+        'method': 'post'
     }
 }
 
