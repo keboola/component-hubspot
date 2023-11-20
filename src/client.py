@@ -120,6 +120,7 @@ class HubSpotClient(ABC):
 
 class CreateContact(HubSpotClient):
     """Creates contacts in batches"""
+
     @batched()
     def process_requests(self, data_reader):
         inputs = [{"properties": {k: str(v) for k, v in row.items()}} for row in data_reader]
@@ -252,22 +253,6 @@ class UpdateCompany(HubSpotClient):
         self.make_batch_request(inputs)
 
 
-class RemoveCompany(HubSpotClient):
-    """Removes company using company_id"""
-
-    def process_requests(self, data_reader):
-        company_ids = set(row['company_id'] for row in data_reader)
-        if '' in company_ids:
-            UserException("Cannot process list with empty records in [company_id] column.")
-
-        for company_id in company_ids:
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(company_id=company_id)
-            self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
-                request_body=None,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
-
-
 class CreateDeal(HubSpotClient):
     """Creates deals"""
 
@@ -283,41 +268,9 @@ class CreateDeal(HubSpotClient):
         self.make_batch_request(inputs)
 
 
-class UpdateDeal(HubSpotClient):
-    """Updates company using Deal ID"""
+class CreateAssociatedObject(HubSpotClient):
+    """Parent class to CRM objects with association - creates objects"""
 
-    @batched()
-    def process_requests(self, data_reader):
-        # /crm/v3/objects/deals/batch/update
-        inputs = []
-        for row in data_reader:
-            if not row["deal_id"]:
-                raise UserException(f"Cannot process deal with empty records in [deal_id] column. {row}")
-
-            inputs.append({
-                "id": row.pop('deal_id'),
-                "properties": row
-            })
-        self.make_batch_request(inputs)
-
-
-class RemoveDeal(HubSpotClient):
-    """Removes Deal using Deal ID"""
-    def process_requests(self, data_reader):
-        deal_ids = set(row["deal_id"] for row in data_reader)
-        if '' in deal_ids:
-            raise UserException("Cannot process deal with empty records in [deal_id] column.")
-
-        for deal_id in deal_ids:
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(deal_id=deal_id)
-            self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
-                request_body=None,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
-
-
-class CreateTicket(HubSpotClient):
-    """Creates tickets"""
     @batched()
     def process_requests(self, data_reader):
         # /crm/v3/objects/tickets/batch/create
@@ -336,37 +289,170 @@ class CreateTicket(HubSpotClient):
         self.make_batch_request(inputs)
 
 
-class UpdateTicket(HubSpotClient):
-    """Updates tickets using Ticket ID"""
+class CreateTicket(CreateAssociatedObject):
+    """Creates tickets"""
+
+
+class CreateProduct(CreateAssociatedObject):
+    """Creates products"""
+
+
+class CreateQuote(CreateAssociatedObject):
+    """Creates quotes"""
+
+
+class CreateLineItem(CreateAssociatedObject):
+    """Creates line items"""
+
+
+class CreateTax(CreateAssociatedObject):
+    """Creates taxes"""
+
+
+class UpdateObject(HubSpotClient, ABC):
+    """Parent class to CRM objects - updates objects"""
+
+    @abstractmethod
+    @property
+    def object_type(self) -> str:
+        pass
 
     @batched()
     def process_requests(self, data_reader):
-        # /crm/v3/objects/deals/batch/update
         inputs = []
         for row in data_reader:
-            if not row["ticket_id"]:
-                raise UserException(f"Cannot process ticket with empty records in [ticket_id] column. {row}")
+            if not row[f"{self.object_type}_id"]:
+                raise UserException(f"Cannot process {self.object_type} with empty records "
+                                    f"in [{self.object_type}_id] column. {row}")
 
             inputs.append({
-                "id": str(row.pop('ticket_id')),
+                "id": str(row.pop(f'{self.object_type}_id')),
                 "properties": row
             })
         self.make_batch_request(inputs)
 
 
-class RemoveTicket(HubSpotClient):
-    """Removes Ticket using Ticket ID"""
-    def process_requests(self, data_reader):
-        ticket_ids = set(row["ticket_id"] for row in data_reader)
-        if '' in ticket_ids:
-            raise UserException("Cannot process ticket with empty records in [ticket_id] column.")
+class UpdateDeal(UpdateObject):
+    """Updates Deal using deal_id"""
 
-        for ticket_id in ticket_ids:
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(ticket_id=ticket_id)
+    @property
+    def object_type(self) -> str:
+        return 'deal'
+
+
+class UpdateTicket(UpdateObject):
+    """Updates Ticket using ticket_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'ticket'
+
+
+class UpdateProduct(UpdateObject):
+    """Updates Product using product_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'product'
+
+
+class UpdateQuote(UpdateObject):
+    """Updates Quote using quote_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'quote'
+
+
+class UpdateLineItem(UpdateObject):
+    """Updates Line item using line_item_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'line_item'
+
+
+class UpdateTax(UpdateObject):
+    """Updates Tax using tax_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'tax'
+
+
+class RemoveObject(HubSpotClient, ABC):
+    """Parent class to CRM objects - removes CRM Object using Object ID"""
+
+    @abstractmethod
+    @property
+    def object_type(self) -> str:
+        pass
+
+    def process_requests(self, data_reader):
+        object_ids = set(row[f"{self.object_type}_id"] for row in data_reader)
+        if '' in object_ids:
+            raise UserException(f"Cannot process {self.object_type} with empty records in [{self.object_type}] column.")
+
+        for object_id in object_ids:
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(object_id)
             self.make_request(
                 url=f'{self.base_url}{endpoint_path}',
                 request_body=None,
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class RemoveCompany(RemoveObject):
+    """Removes Company using company_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'company'
+
+
+class RemoveDeal(RemoveObject):
+    """Removes Deal using deal_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'deal'
+
+
+class RemoveTicket(RemoveObject):
+    """Removes Ticket using ticket_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'ticket'
+
+
+class RemoveProduct(RemoveObject):
+    """Removes Product using product_id"""
+    @property
+    def object_type(self) -> str:
+        return 'product'
+
+
+class RemoveQuote(RemoveObject):
+    """Removes Quote using quote_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'quote'
+
+
+class RemoveLineItem(RemoveObject):
+    """Removes Line item using line_item_id"""
+    @property
+    def object_type(self) -> str:
+        return 'line_item'
+
+
+class RemoveTax(RemoveObject):
+    """Removes Tax item using tax_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'tax'
 
 
 def test_credentials(token: str, auth_type: Literal["API Key", "Private App Token"]) -> bool:
@@ -424,7 +510,19 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
         "deal_remove": RemoveDeal,
         "ticket_create": CreateTicket,
         "ticket_update": UpdateTicket,
-        "ticket_remove": RemoveTicket
+        "ticket_remove": RemoveTicket,
+        "product_create": CreateProduct,
+        "product_update": UpdateProduct,
+        "product_remove": RemoveProduct,
+        "quote_create": CreateQuote,
+        "quote_update": UpdateQuote,
+        "quote_remove": RemoveQuote,
+        "line_item_create": CreateLineItem,
+        "line_item_update": UpdateLineItem,
+        "line_item_remove": RemoveLineItem,
+        "tax_create": CreateTax,
+        "tax_update": UpdateTax,
+        "tax_remove": RemoveTax
     }
 
     if endpoint in endpoints:
