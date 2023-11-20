@@ -281,8 +281,8 @@ class CreateAssociatedObject(HubSpotClient):
             associations = [{
                 'to': {'id': str(row.pop('association_id'))},
                 'types': [{
-                    'associationCategory': row.pop('associationsCategory'),
-                    'associationsTypeId': row.pop('associationsTypeId')
+                    'associationCategory': row.pop('association_category'),
+                    'associationTypeId': row.pop('association_type_id')
                 }]
             }]
             inputs.append({"associations": associations, "properties": row})
