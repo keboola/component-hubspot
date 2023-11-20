@@ -40,7 +40,7 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'company_remove': {
-        'endpoint': 'companies/v2/companies/{company_id}',
+        'endpoint': 'companies/v2/companies/{}',
         'required_column': ['company_id'],
         'method': 'delete'
     },
@@ -55,7 +55,7 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'deal_remove': {
-        'endpoint': 'crm/v3/objects/deals/{deal_id}',
+        'endpoint': 'crm/v3/objects/deals/{}',
         'required_column': ['deal_id'],
         'method': 'delete'
     },
@@ -70,8 +70,68 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'ticket_remove': {
-        'endpoint': 'crm/v3/objects/tickets/{ticketId}',
+        'endpoint': 'crm/v3/objects/tickets/{}',
         'required_column': ['ticket_id'],
+        'method': 'delete'
+    },
+    'product_create': {
+        'endpoint': 'crm/v3/objects/products/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'product_update': {
+        'endpoint': 'crm/v3/objects/products/batch/update',
+        'required_column': ['product_id'],
+        'method': 'post'
+    },
+    'product_remove': {
+        'endpoint': 'crm/v3/objects/products/{}',
+        'required_column': ['product_id'],
+        'method': 'delete'
+    },
+    'quote_create': {
+        'endpoint': 'crm/v3/objects/quotes/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'quote_update': {
+        'endpoint': 'crm/v3/objects/quotes/batch/update',
+        'required_column': ['quote_id'],
+        'method': 'post'
+    },
+    'quote_remove': {
+        'endpoint': 'crm/v3/objects/quotes/{}',
+        'required_column': ['quote_id'],
+        'method': 'delete'
+    },
+    'line_item_create': {
+        'endpoint': 'crm/v3/objects/line_items/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'line_item_update': {
+        'endpoint': 'crm/v3/objects/line_items/batch/update',
+        'required_column': ['line_item_id'],
+        'method': 'post'
+    },
+    'line_item_remove': {
+        'endpoint': 'crm/v3/objects/line_items/{}',
+        'required_column': ['line_item_id'],
+        'method': 'delete'
+    },
+    'tax_create': {
+        'endpoint': 'crm/v3/objects/taxes/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'tax_update': {
+        'endpoint': 'crm/v3/objects/taxes/batch/update',
+        'required_column': ['tax_id'],
+        'method': 'post'
+    },
+    'tax_remove': {
+        'endpoint': 'crm/v3/objects/taxes/{}',
+        'required_column': ['tax_id'],
         'method': 'delete'
     }
 }
