@@ -309,11 +309,39 @@ class CreateTax(CreateAssociatedObject):
     """Creates taxes"""
 
 
+class CreateCall(CreateAssociatedObject):
+    """Creates calls"""
+
+
+class CreateCommunication(CreateAssociatedObject):
+    """Creates communications"""
+
+
+class CreateEmail(CreateAssociatedObject):
+    """Creates emails"""
+
+
+class CreateMeeting(CreateAssociatedObject):
+    """Creates meetings"""
+
+
+class CreateNote(CreateAssociatedObject):
+    """Creates notes"""
+
+
+class CreatePostalMail(CreateAssociatedObject):
+    """Creates postal_mails"""
+
+
+class CreateTask(CreateAssociatedObject):
+    """Creates tasks"""
+
+
 class UpdateObject(HubSpotClient, ABC):
     """Parent class to CRM objects - updates objects"""
 
-    @abstractmethod
     @property
+    @abstractmethod
     def object_type(self) -> str:
         pass
 
@@ -380,11 +408,67 @@ class UpdateTax(UpdateObject):
         return 'tax'
 
 
+class UpdateCall(UpdateObject):
+    """Updates Call using call_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'call'
+
+
+class UpdateCommunication(UpdateObject):
+    """Updates Communication using communication_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'communication'
+
+
+class UpdateEmail(UpdateObject):
+    """Updates Email using email_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'email'
+
+
+class UpdateMeeting(UpdateObject):
+    """Updates Meeting using meeting_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'meeting'
+
+
+class UpdateNote(UpdateObject):
+    """Updates Note using note_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'note'
+
+
+class UpdatePostalMail(UpdateObject):
+    """Updates PostalMail using postal_mail_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'postal_mail'
+
+
+class UpdateTask(UpdateObject):
+    """Updates Task using task_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'task'
+
+
 class RemoveObject(HubSpotClient, ABC):
     """Parent class to CRM objects - removes CRM Object using Object ID"""
 
-    @abstractmethod
     @property
+    @abstractmethod
     def object_type(self) -> str:
         pass
 
@@ -455,6 +539,62 @@ class RemoveTax(RemoveObject):
         return 'tax'
 
 
+class RemoveCall(RemoveObject):
+    """Removes Call using call_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'call'
+
+
+class RemoveCommunication(RemoveObject):
+    """Removes Communication using communication_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'communication'
+
+
+class RemoveEmail(RemoveObject):
+    """Removes Email using email_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'email'
+
+
+class RemoveMeeting(RemoveObject):
+    """Removes Meeting using meeting_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'meeting'
+
+
+class RemoveNote(RemoveObject):
+    """Removes Note using note_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'note'
+
+
+class RemovePostalMail(RemoveObject):
+    """Removes PostalMail using postal_mail_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'postal_mail'
+
+
+class RemoveTask(RemoveObject):
+    """Removes Task using task_id"""
+
+    @property
+    def object_type(self) -> str:
+        return 'task'
+
+
 def test_credentials(token: str, auth_type: Literal["API Key", "Private App Token"]) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of token.
@@ -522,7 +662,28 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
         "line_item_remove": RemoveLineItem,
         "tax_create": CreateTax,
         "tax_update": UpdateTax,
-        "tax_remove": RemoveTax
+        "tax_remove": RemoveTax,
+        "call_create": CreateCall,
+        "call_update": UpdateCall,
+        "call_remove": RemoveCall,
+        "communication_create": CreateCommunication,
+        "communication_update": UpdateCommunication,
+        "communication_remove": RemoveCommunication,
+        "email_create": CreateEmail,
+        "email_update": UpdateEmail,
+        "email_remove": RemoveEmail,
+        "meeting_create": CreateMeeting,
+        "meeting_update": UpdateMeeting,
+        "meeting_remove": RemoveMeeting,
+        "note_create": CreateNote,
+        "note_update": UpdateNote,
+        "note_remove": RemoveNote,
+        "postal_mail_create": CreatePostalMail,
+        "postal_mail_update": UpdatePostalMail,
+        "postal_mail_remove": RemovePostalMail,
+        "task_create": CreateTask,
+        "task_update": UpdateTask,
+        "task_remove": RemoveTask
     }
 
     if endpoint in endpoints:

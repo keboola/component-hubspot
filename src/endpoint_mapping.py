@@ -133,6 +133,111 @@ ENDPOINT_MAPPING = {
         'endpoint': 'crm/v3/objects/taxes/{}',
         'required_column': ['tax_id'],
         'method': 'delete'
+    },
+    'call_create': {
+        'endpoint': 'crm/v3/objects/calls/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'call_update': {
+        'endpoint': 'crm/v3/objects/calls/batch/update',
+        'required_column': ['call_id'],
+        'method': 'post'
+    },
+    'call_remove': {
+        'endpoint': 'crm/v3/objects/calls/{}',
+        'required_column': ['call_id'],
+        'method': 'delete'
+    },
+    'communication_create': {
+        'endpoint': 'crm/v3/objects/communications/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'communication_update': {
+        'endpoint': 'crm/v3/objects/communications/batch/update',
+        'required_column': ['communication_id'],
+        'method': 'post'
+    },
+    'communication_remove': {
+        'endpoint': 'crm/v3/objects/communications/{}',
+        'required_column': ['communication_id'],
+        'method': 'delete'
+    },
+    'email_create': {
+        'endpoint': 'crm/v3/objects/emails/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'email_update': {
+        'endpoint': 'crm/v3/objects/emails/batch/update',
+        'required_column': ['email_id'],
+        'method': 'post'
+    },
+    'email_remove': {
+        'endpoint': 'crm/v3/objects/emails/{}',
+        'required_column': ['email_id'],
+        'method': 'delete'
+    },
+    'meeting_create': {
+        'endpoint': 'crm/v3/objects/meetings/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'meeting_update': {
+        'endpoint': 'crm/v3/objects/meetings/batch/update',
+        'required_column': ['meeting_id'],
+        'method': 'post'
+    },
+    'meeting_remove': {
+        'endpoint': 'crm/v3/objects/meetings/{}',
+        'required_column': ['meeting_id'],
+        'method': 'delete'
+    },
+    'note_create': {
+        'endpoint': 'crm/v3/objects/notes/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'note_update': {
+        'endpoint': 'crm/v3/objects/notes/batch/update',
+        'required_column': ['note_id'],
+        'method': 'post'
+    },
+    'note_remove': {
+        'endpoint': 'crm/v3/objects/notes/{}',
+        'required_column': ['note_id'],
+        'method': 'delete'
+    },
+    'postal_mail_create': {
+        'endpoint': 'crm/v3/objects/postal_mail/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'postal_mail_update': {
+        'endpoint': 'crm/v3/objects/postal_mail/batch/update',
+        'required_column': ['postal_mail_id'],
+        'method': 'post'
+    },
+    'postal_mail_remove': {
+        'endpoint': 'crm/v3/objects/postal_mail/{}',
+        'required_column': ['postal_mail_id'],
+        'method': 'delete'
+    },
+    'task_create': {
+        'endpoint': 'crm/v3/objects/tasks/batch/create',
+        'required_column': ['association_id', 'associationCategory', 'associationTypeId'],
+        'method': 'post'
+    },
+    'task_update': {
+        'endpoint': 'crm/v3/objects/tasks/batch/update',
+        'required_column': ['task_id'],
+        'method': 'post'
+    },
+    'task_remove': {
+        'endpoint': 'crm/v3/objects/tasks/{}',
+        'required_column': ['task_id'],
+        'method': 'delete'
     }
 }
 
