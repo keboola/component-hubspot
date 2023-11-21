@@ -79,7 +79,7 @@ class HubSpotClient(ABC):
         Handles the assembly of URLs to call and request bodies to send.
         Args:
             data_reader: csv.DictReader with loaded csv
-
+            error_writer: csv.DictWriter for 207 response code
         Returns:
             None
         """
