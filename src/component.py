@@ -21,6 +21,8 @@ REQUIRED_PARAMETERS = [
     KEY_OBJECT
 ]
 ERRORS_TABLE_COLUMNS = ('status', 'category', 'message', 'context')
+HUBSPOT_OBJECTS = ("contact", "company", "list", "deal", "ticket", "product", "quote", "line_item", "tax", "call",
+                   "communication", "email", "meeting", "note", "postal_mail", "task")
 
 
 def coalesce(*arg):
@@ -80,10 +82,7 @@ class Component(ComponentBase):
 
     @property
     def action(self) -> str:
-        action = coalesce(self.params.get("contact_action"),
-                          self.params.get("company_action"),
-                          self.params.get("list_action"),
-                          self.params.get("deal_action"))
+        action = coalesce(*(self.params.get(f"{hubspot_object}_action") for hubspot_object in HUBSPOT_OBJECTS))
 
         if action is None and self.hubspot_object not in list(LEGACY_ENDPOINT_MAPPING_CONVERSION.keys()):
             raise UserException("A valid Object action must be provided.")
