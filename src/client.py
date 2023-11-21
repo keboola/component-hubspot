@@ -697,6 +697,5 @@ def run(endpoint: str, data_reader: csv.DictReader, token: str,
     Returns:
         None
     """
-
     factory = get_factory(endpoint, token, auth_type)
     factory.process_requests(data_reader)
