@@ -10,7 +10,19 @@
         "contact",
         "company",
         "list",
-        "deal"
+        "deal",
+        "ticket",
+        "product",
+        "quote",
+        "line_item",
+        "tax",
+        "call",
+        "communication",
+        "email",
+        "meeting",
+        "note",
+        "postal_mail",
+        "task"
       ],
       "type": "string",
       "title": "Object",
@@ -20,7 +32,19 @@
           "Contact",
           "Company",
           "List",
-          "Deal"
+          "Deal",
+          "Ticket",
+          "Product",
+          "Quote",
+          "LineItem",
+          "Tax",
+          "Call",
+          "Communication",
+          "Email",
+          "Meeting",
+          "Note",
+          "PostalMail",
+          "Task"
         ]
       }
     },
@@ -103,6 +127,246 @@
           "hubspot_object": "deal"
         }
       }
+    },
+    "call_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "call"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "communication_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "communication"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "email_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "email"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "line_item_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "line_item"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "meeting_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "meeting"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "note_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "note"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "postal_mail_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "postal_mail"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "product_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "product"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "quote_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "quote"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "task_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "task"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "tax_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "tax"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "ticket_action": {
+      "enum": [
+        "create",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "ticket"
+        },
+        "enum_titles": [
+          "Create",
+          "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
     }
   }
 }
