@@ -3,6 +3,7 @@ Hubspot Writer
 """
 import csv
 import logging
+from pathlib import Path
 
 from keboola.component import dao
 from keboola.component.base import ComponentBase
@@ -19,6 +20,7 @@ KEY_OBJECT = 'hubspot_object'
 REQUIRED_PARAMETERS = [
     KEY_OBJECT
 ]
+ERRORS_TABLE_COLUMNS = ('status', 'category', 'message', 'context')
 
 
 def coalesce(*arg):
@@ -56,9 +58,14 @@ class Component(ComponentBase):
 
         logging.info(f"Processing input table: {table.name}")
 
-        with open(table.full_path) as csvfile:
-            reader = csv.DictReader(csvfile)
-            hubspot_client.run(self.endpoint, reader, self.token, authentication_type)
+        output_table_destination = self.configuration.tables_output_mapping[0].destination
+        output_table_full_path = Path(self.tables_out_path, output_table_destination)
+
+        with open(table.full_path) as input_file, open(output_table_full_path, 'w', newline='') as output_file:
+            reader = csv.DictReader(input_file)
+            error_writer = csv.DictWriter(output_file, fieldnames=ERRORS_TABLE_COLUMNS)
+            error_writer.writeheader()
+            hubspot_client.run(self.endpoint, reader, error_writer, self.token, authentication_type)
 
     @property
     def hubspot_object(self) -> str:
