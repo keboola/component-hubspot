@@ -40,13 +40,10 @@ class Component(ComponentBase):
         """
         Main execution code
         """
+        self.token = self.params["#private_app_token"]
+        authentication_type = self.params.get("authentication_type", "Private App Token")
 
-        authentication_type = self.params.get("authentication_type", "API Key")
-        if authentication_type == "API Key":
-            self.token = self.params["#api_token"]
-        elif authentication_type == "Private App Token":
-            self.token = self.params["#private_app_token"]
-        else:
+        if authentication_type != "Private App Token":
             raise ValueError(f"Invalid authentication type: {authentication_type}")
 
         # Input tables
@@ -55,7 +52,7 @@ class Component(ComponentBase):
 
         # Input checks
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
-        hubspot_client.test_credentials(self.token, authentication_type)
+        hubspot_client.test_credentials(self.token)
         self.validate_user_input(table)
 
         logging.info(f"Processing input table: {table.name}")
@@ -67,7 +64,7 @@ class Component(ComponentBase):
             reader = csv.DictReader(input_file)
             error_writer = csv.DictWriter(output_file, fieldnames=ERRORS_TABLE_COLUMNS)
             error_writer.writeheader()
-            hubspot_client.run(self.endpoint, reader, error_writer, self.token, authentication_type)
+            hubspot_client.run(self.endpoint, reader, error_writer, self.token)
 
     @property
     def hubspot_object(self) -> str:

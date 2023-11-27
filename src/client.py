@@ -43,21 +43,12 @@ def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_inte
 class HubSpotClient(ABC):
     """Template for classes handling communication with Hubspot API"""
 
-    def __init__(self, endpoint: str, token: str, auth_type: Literal["API Key", "Private App Token"]):
+    def __init__(self, endpoint: str, token: str):
         # Base parameters for the requests
         self.base_url = 'https://api.hubapi.com/'
         self.endpoint = endpoint
-        self.base_headers = {
-            'Content-Type': 'application/json'
-        }
-        if auth_type == 'API Key':
-            self.base_params = {
-                'hapikey': token
-            }
-            self.base_headers = {}
-        else:
-            self.base_params = {}
-            self.base_headers = {'Authorization': f'Bearer {token}'}
+        self.base_params = {}
+        self.base_headers = {'Authorization': f'Bearer {token}'}
 
         self.s = Session()
         self.s.mount('https://',
@@ -285,11 +276,10 @@ class CreateAssociatedObject(HubSpotClient):
 
     @batched()
     def process_requests(self, data_reader, error_writer):
-        # /crm/v3/objects/tickets/batch/create
         inputs = []
         for row in data_reader:
             if not row["association_id"]:
-                raise UserException(f"Cannot process ticket with empty record in [association_id] column. {row}")
+                raise UserException(f"Cannot process object with empty record in [association_id] column. {row}")
             associations = [{
                 'to': {'id': str(row.pop('association_id'))},
                 'types': [{
@@ -600,7 +590,7 @@ class RemoveTask(RemoveObject):
         return 'task'
 
 
-def test_credentials(token: str, auth_type: Literal["API Key", "Private App Token"]) -> bool:
+def test_credentials(token: str) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of token.
     Returns:
@@ -611,12 +601,7 @@ def test_credentials(token: str, auth_type: Literal["API Key", "Private App Toke
     # Authentication Check to ensure the API token is valid
     auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
     auth_param = {'count': 1}
-    auth_headers = {}
-
-    if auth_type == 'API Key':
-        auth_param['hapikey'] = token
-    else:
-        auth_headers['Authorization'] = f'Bearer {token}'
+    auth_headers = {'Authorization': f'Bearer {token}'}
 
     try:
         auth_test = get(auth_url, params=auth_param, headers=auth_headers)
@@ -631,13 +616,12 @@ def test_credentials(token: str, auth_type: Literal["API Key", "Private App Toke
     return True
 
 
-def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Private App Token"]) -> HubSpotClient:
+def get_factory(endpoint: str, token: str) -> HubSpotClient:
     """Constructs an exporter factory based on endpoint selection
 
     Args:
         endpoint: Hubspot API endpoint set in config.json
-        token: API key for Hubspot API
-        auth_type: "API Key" or "Private App Token"
+        token: Private App Token for Hubspot API
     """
 
     endpoints = {
@@ -692,17 +676,15 @@ def get_factory(endpoint: str, token: str, auth_type: Literal["API Key", "Privat
     }
 
     if endpoint in endpoints:
-        return endpoints[endpoint](endpoint, token, auth_type)
+        return endpoints[endpoint](endpoint, token)
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
-def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, token: str,
-        auth_type: Literal["API Key", "Private App Token"]) -> None:
+def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, token: str) -> None:
     """
     Main entrypoint to call.
     Args:
-        auth_type: "API Key" or "Private App Token"
-        token: API key for Hubspot API
+        token: Private App Token for Hubspot API
         endpoint: Hubspot API endpoint
         data_reader: csv.DictReader object with data from input csv
         error_writer: csv.DictWriter object to log 207 status_code events
@@ -710,5 +692,5 @@ def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter
     Returns:
         None
     """
-    factory = get_factory(endpoint, token, auth_type)
+    factory = get_factory(endpoint, token)
     factory.process_requests(data_reader, error_writer)
