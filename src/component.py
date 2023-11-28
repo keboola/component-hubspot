@@ -57,6 +57,7 @@ class Component(ComponentBase):
         logging.info(f"Processing input table: {input_table.name}")
 
         output_table = self.create_out_table_definition('errors.csv', columns=ERRORS_TABLE_COLUMNS)
+        self.write_manifest(output_table)
 
         with open(input_table.full_path) as input_file, open(output_table.full_path, 'w', newline='') as output_file:
             reader = csv.DictReader(input_file)
