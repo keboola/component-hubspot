@@ -5,14 +5,17 @@ Your Hubspot API token, for more information see here ([how-do-i-get-my-hubspot-
 
 The writer will fetch all input tables and convert each row into the required request format based on the requirements of the endpoint. Each writer will write to `one` endpoint. 
 
-| Endpoint | Required Columns | Descriptions |
-|-|-|-|
-| Create Contact | |  A list of contact properties that you want to set for the new contact record. Each entry in the list must include the internal name of the property, and the value that you want to set for that property. Note: You must include at least one property for the new contact or you will receive an error. |
-| Create List | `name` | All list created via this component will `NOT` be dynamic. |
-| Add Contact to List | `list_id, vids, emails` | It is required to have both `vids` and `emails` columns in the input data file. The code will prioritize the values input for `vids`. Example, if there are inputs for both `emails` and `vids` in the same row, the code will prioritize `vids` pushing this value into the request and ignore the value in `emails`. Please note that you cannot manually add contacts to dynamic lists. To determine whether a list is dynamic or static, when you get a list, you will see a flag called dynamic that equates to true or false. Up to 500 total contacts can be added in a single request. |
-| Remove Contact from List | `list_id, vids` | Please note that you cannot manually remove contacts from dynamic lists - they can only be updated by the contacts system based on the properties of the list itself. To determine whether a list is dynamic or static, when you get a list, you will see a flag called dynamic that equates to true or false. |
-| Update Contact | `vid` | This endpoint is used to update existing contacts  and it requires `vid` in the input data file. `vid` cannot be empty. The rest of the columns other than vid will be used as a request parameter to update the contact property. If either the property or the contact does not exist, the update request for that specific contact will fail. |
-| Update Contact by Email | `email` | Like the `Update Contact` endpoint, this endpoint is used to update existing contacts and it requires `email` in the inputdata file. The rest of the columns will be used to update the contact's properties |
-| Create Company | `name` | Creates companies with defined properties if any are present.
-| Update Company | `company_id` | Updates companies identified by `company_id` with defined properties.
-| Delete Company | `company_id` | Deletes companies identified by `company_id`.
+| Batch endpoint | Endpoint | Required Columns | Descriptions |
+|-|-|-|-|
+| Yes | Create Contact           |                         |  A list of contact properties that you want to set for the new contact record. Each entry in the list must include the internal name of the property, and the value that you want to set for that property. Note: You must include at least one property for the new contact or you will receive an error. |
+| No | Create List              | `name`                  | All list created via this component will `NOT` be dynamic. |
+| No | Add Contact to List      | `list_id, vids, emails` | It is required to have both `vids` and `emails` columns in the input data file. The code will prioritize the values input for `vids`. Example, if there are inputs for both `emails` and `vids` in the same row, the code will prioritize `vids` pushing this value into the request and ignore the value in `emails`. Please note that you cannot manually add contacts to dynamic lists. To determine whether a list is dynamic or static, when you get a list, you will see a flag called dynamic that equates to true or false. Up to 500 total contacts can be added in a single request. |
+| No | Remove Contact from List | `list_id, vids`         | Please note that you cannot manually remove contacts from dynamic lists - they can only be updated by the contacts system based on the properties of the list itself. To determine whether a list is dynamic or static, when you get a list, you will see a flag called dynamic that equates to true or false. |
+| Yes | Update Contact           | `vid`                   | This endpoint is used to update existing contacts  and it requires `vid` in the input data file. `vid` cannot be empty. The rest of the columns other than vid will be used as a request parameter to update the contact property. If either the property or the contact does not exist, the update request for that specific contact will fail. |
+| No | Update Contact by Email  | `email`                 | Like the `Update Contact` endpoint, this endpoint is used to update existing contacts and it requires `email` in the inputdata file. The rest of the columns will be used to update the contact's properties |
+| Yes | Create Company           | `name`                  | Creates companies with defined properties if any are present. |
+| Yes | Update Company           | `company_id`            | Updates companies identified by `company_id` with defined properties. |
+| Yes | Delete Company           | `company_id`            | Deletes companies identified by `company_id`. |
+| Yes | Create Deal              | `hubspot_owner_id`      | Creates deals with defined properties if any are present. |
+| Yes | Update Deal              | `deal_id`               | Updates deals identified by `deal_id` with defined properties. |
+| Yes | Delete Deal              | `deal_id`               | Deletes deals identified by `deal_id`. |
