@@ -20,7 +20,7 @@ KEY_OBJECT = 'hubspot_object'
 REQUIRED_PARAMETERS = [
     KEY_OBJECT
 ]
-ERRORS_TABLE_COLUMNS = ('status', 'category', 'message', 'context')
+ERRORS_TABLE_COLUMNS = ['status', 'category', 'message', 'context']
 HUBSPOT_OBJECTS = ("contact", "company", "list", "deal", "ticket", "product", "quote", "line_item", "tax", "call",
                    "communication", "email", "meeting", "note", "postal_mail", "task")
 
@@ -48,21 +48,20 @@ class Component(ComponentBase):
 
         # Input tables
         in_tables = self.get_input_tables_definitions()
-        table = in_tables[0]
+        input_table = in_tables[0]
 
         # Input checks
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         hubspot_client.test_credentials(self.token)
-        self.validate_user_input(table)
+        self.validate_user_input(input_table)
 
-        logging.info(f"Processing input table: {table.name}")
+        logging.info(f"Processing input table: {input_table.name}")
 
-        output_table_destination = self.configuration.tables_output_mapping[0].destination
-        output_table_full_path = Path(self.tables_out_path, output_table_destination)
+        output_table = self.create_out_table_definition('errors.csv', columns=ERRORS_TABLE_COLUMNS)
 
-        with open(table.full_path) as input_file, open(output_table_full_path, 'w', newline='') as output_file:
+        with open(input_table.full_path) as input_file, open(output_table.full_path, 'w', newline='') as output_file:
             reader = csv.DictReader(input_file)
-            error_writer = csv.DictWriter(output_file, fieldnames=ERRORS_TABLE_COLUMNS)
+            error_writer = csv.DictWriter(output_file, fieldnames=output_table.columns)
             error_writer.writeheader()
             hubspot_client.run(self.endpoint, reader, error_writer, self.token)
 
