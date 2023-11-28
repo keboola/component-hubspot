@@ -55,15 +55,14 @@ class Component(ComponentBase):
         hubspot_client.test_credentials(self.token)
         self.validate_user_input(input_table)
 
-        output_table = self.create_out_table_definition('errors.csv', columns=ERRORS_TABLE_COLUMNS,
-                                                        destination=str(Path(self.tables_out_path, 'errors.csv')))
+        output_table = self.create_out_table_definition('errors.csv')
         self.write_manifest(output_table)
 
         logging.info(f"Processing input table: {input_table.name}")
 
         with open(input_table.full_path) as input_file, open(output_table.full_path, 'w', newline='') as output_file:
             reader = csv.DictReader(input_file)
-            error_writer = csv.DictWriter(output_file, fieldnames=output_table.columns)
+            error_writer = csv.DictWriter(output_file, fieldnames=ERRORS_TABLE_COLUMNS)
             error_writer.writeheader()
             hubspot_client.run(self.endpoint, reader, error_writer, self.token)
 
