@@ -3,7 +3,6 @@ Hubspot Writer
 """
 import csv
 import logging
-from pathlib import Path
 
 from keboola.component import dao
 from keboola.component.base import ComponentBase
