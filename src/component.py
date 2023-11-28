@@ -3,6 +3,7 @@ Hubspot Writer
 """
 import csv
 import logging
+from pathlib import Path
 
 from keboola.component import dao
 from keboola.component.base import ComponentBase
@@ -54,10 +55,11 @@ class Component(ComponentBase):
         hubspot_client.test_credentials(self.token)
         self.validate_user_input(input_table)
 
-        logging.info(f"Processing input table: {input_table.name}")
-
-        output_table = self.create_out_table_definition('errors.csv', columns=ERRORS_TABLE_COLUMNS)
+        output_table = self.create_out_table_definition('errors.csv', columns=ERRORS_TABLE_COLUMNS,
+                                                        destination=str(Path(self.tables_out_path, 'errors.csv')))
         self.write_manifest(output_table)
+
+        logging.info(f"Processing input table: {input_table.name}")
 
         with open(input_table.full_path) as input_file, open(output_table.full_path, 'w', newline='') as output_file:
             reader = csv.DictReader(input_file)
