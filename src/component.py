@@ -56,7 +56,6 @@ class Component(ComponentBase):
 
         # TODO: add write_always=True parameter once it's in keboola.component lib
         output_table = self.create_out_table_definition('errors.csv')
-        self.write_manifest(output_table)
 
         logging.info(f"Processing input table: {input_table.name}")
 
