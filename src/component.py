@@ -54,6 +54,7 @@ class Component(ComponentBase):
         hubspot_client.test_credentials(self.token)
         self.validate_user_input(input_table)
 
+        # TODO: add write_always=True parameter once it's in keboola.component lib
         output_table = self.create_out_table_definition('errors.csv')
         self.write_manifest(output_table)
 
@@ -63,7 +64,13 @@ class Component(ComponentBase):
             reader = csv.DictReader(input_file)
             error_writer = csv.DictWriter(output_file, fieldnames=ERRORS_TABLE_COLUMNS)
             error_writer.writeheader()
+            error_writer.errors = False
             hubspot_client.run(self.endpoint, reader, error_writer, self.token)
+
+            if error_writer.errors:
+                self.write_manifest(output_table)
+                raise UserException(
+                    'There were errors during some requests handling - check errors.csv for more details.')
 
     @property
     def hubspot_object(self) -> str:

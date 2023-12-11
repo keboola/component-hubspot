@@ -14,6 +14,8 @@ from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
 from typing import Literal, Union
 
+from component import ERRORS_TABLE_COLUMNS
+
 import logging
 
 BATCH_SIZE = 100
@@ -43,12 +45,13 @@ def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_inte
 class HubSpotClient(ABC):
     """Template for classes handling communication with Hubspot API"""
 
-    def __init__(self, endpoint: str, token: str):
+    def __init__(self, endpoint: str, token: str, error_writer: csv.DictWriter):
         # Base parameters for the requests
         self.base_url = 'https://api.hubapi.com/'
         self.endpoint = endpoint
         self.base_params = {}
         self.base_headers = {'Authorization': f'Bearer {token}'}
+        self.error_writer = error_writer
 
         self.s = Session()
         self.s.mount('https://',
@@ -59,21 +62,29 @@ class HubSpotClient(ABC):
                              status_forcelist=[500, 502, 503, 504, 521],
                              allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
 
-    @staticmethod
-    def log_errors(response, error_writer: csv.DictWriter):
-        for error in response.json()['errors']:
-            error_writer.writerow(error)
-
     @abstractmethod
-    def process_requests(self, data_reader, error_writer: csv.DictWriter) -> None:
+    def process_requests(self, data_reader) -> None:
         """
         Handles the assembly of URLs to call and request bodies to send.
         Args:
             data_reader: csv.DictReader with loaded csv
-            error_writer: csv.DictWriter for 207 response code
         Returns:
             None
         """
+
+    def log_batch_errors(self, response):
+        self.error_writer.errors = True
+        for error in response.json()['errors']:
+            self.error_writer.writerow(error)
+
+    def log_errors(self, response):
+        self.error_writer.errors = True
+        error = response.json()
+        error_row = {
+            field: error.get(field)
+            for field in ERRORS_TABLE_COLUMNS
+        }
+        self.error_writer.writerow(error_row)
 
     def make_request(self, url: str, request_body: Union[dict, None],
                      method: Literal["post", "put", "delete"]) -> Response:
@@ -95,20 +106,23 @@ class HubSpotClient(ABC):
                 response.raise_for_status()
             except RequestException as e:
                 response_content = response.content if response is not None else None
-                raise UserException(
-                    f"Cannot process record {request_body}, HTTP error: {e}, response content: {response_content}"
-                )
+                self.log_errors(response)
+                logging.error(f"Cannot process record {request_body}, "
+                              f"HTTP error: {e},"
+                              f"response content: {response_content}")
+                # raise UserException(
+                #     f"Cannot process record {request_body}, HTTP error: {e}, response content: {response_content}"
+                # )
         else:
             raise UserException(f"Method {method} not allowed.")
 
         return response
 
-    def make_batch_request(self, inputs: list, error_writer: csv.DictWriter):
+    def make_batch_request(self, inputs: list):
         """
         Makes a batch request with the HubSpot specified data body.
         Args:
             inputs: list of individual HubsSpot objects to be created/updated
-            error_writer: csv.DictWriter csv writer for 207 response code
         Returns:
             None
         """
@@ -118,22 +132,22 @@ class HubSpotClient(ABC):
 
         if response.status_code == 207:
             logging.error(f"{method} request to {url} partially failed with status code 207")
-            self.log_errors(response, error_writer)
+            self.log_batch_errors(response)
 
 
 class CreateContact(HubSpotClient):
     """Creates contacts in batches"""
 
     @batched()
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         inputs = [{"properties": {k: str(v) for k, v in row.items()}} for row in data_reader]
-        self.make_batch_request(inputs, error_writer)
+        self.make_batch_request(inputs)
 
 
 class CreateList(HubSpotClient):
     """Creates a new contact list"""
 
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         for row in data_reader:
             self.make_request(
                 url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
@@ -144,7 +158,7 @@ class CreateList(HubSpotClient):
 class AddContactToList(HubSpotClient):
     """Adds contacts to list"""
 
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         rows_by_list_id = defaultdict(list)
         for row in data_reader:
             if not row['list_id']:
@@ -160,7 +174,7 @@ class AddContactToList(HubSpotClient):
                 else:
                     emails.append(row["emails"])
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].replace('{list_id}', str(list_id))
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(list_id=list_id)
             self.make_request(
                 url=f'{self.base_url}{endpoint_path}',
                 request_body={"vids": vids, "emails": emails},
@@ -170,7 +184,7 @@ class AddContactToList(HubSpotClient):
 class RemoveContactFromList(HubSpotClient):
     """Removes contacts from lists"""
 
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         rows_by_list_id = defaultdict(list)
         for row in data_reader:
             if not row['list_id']:
@@ -195,7 +209,7 @@ class UpdateContact(HubSpotClient):
     """Updates contacts"""
 
     @batched()
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row["vid"]:
@@ -205,13 +219,13 @@ class UpdateContact(HubSpotClient):
                 "id": row.pop('vid'),
                 "properties": {k: str(v) for k, v in row.items()}
             })
-        self.make_batch_request(inputs, error_writer)
+        self.make_batch_request(inputs)
 
 
 class UpdateContactByEmail(HubSpotClient):
     """Updates contacts using email as ID"""
 
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         for row in data_reader:
             if not row["email"]:
                 raise UserException(f"Cannot process list with empty records in [email] column. {row}")
@@ -229,21 +243,21 @@ class CreateCompany(HubSpotClient):
     """Creates company"""
 
     @batched()
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row["name"]:
                 raise UserException(f"Cannot process company with empty records in [name] column. {row}")
             properties = {k: str(v) for k, v in row.items()}
             inputs.append({"properties": properties})
-        self.make_batch_request(inputs, error_writer)
+        self.make_batch_request(inputs)
 
 
 class UpdateCompany(HubSpotClient):
     """Updates company using company ID"""
 
     @batched()
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row["company_id"]:
@@ -253,14 +267,14 @@ class UpdateCompany(HubSpotClient):
                 "id": row.pop("company_id"),
                 "properties": {k: str(v) for k, v in row.items()}
             })
-        self.make_batch_request(inputs, error_writer)
+        self.make_batch_request(inputs)
 
 
 class CreateDeal(HubSpotClient):
     """Creates deals"""
 
     @batched()
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         # /crm/v3/objects/deals/batch/create
         inputs = []
         for row in data_reader:
@@ -268,14 +282,14 @@ class CreateDeal(HubSpotClient):
                 raise UserException(f"Cannot process deal with empty record in [hubspot_owner_id] column. {row}")
 
             inputs.append({"properties": row})
-        self.make_batch_request(inputs, error_writer)
+        self.make_batch_request(inputs)
 
 
 class CreateAssociatedObject(HubSpotClient):
     """Parent class to CRM objects with association - creates objects"""
 
     @batched()
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row["association_id"]:
@@ -288,7 +302,7 @@ class CreateAssociatedObject(HubSpotClient):
                 }]
             }]
             inputs.append({"associations": associations, "properties": row})
-        self.make_batch_request(inputs, error_writer)
+        self.make_batch_request(inputs)
 
 
 class CreateTicket(CreateAssociatedObject):
@@ -348,7 +362,7 @@ class UpdateObject(HubSpotClient, ABC):
         pass
 
     @batched()
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row[f"{self.object_type}_id"]:
@@ -359,7 +373,7 @@ class UpdateObject(HubSpotClient, ABC):
                 "id": str(row.pop(f'{self.object_type}_id')),
                 "properties": row
             })
-        self.make_batch_request(inputs, error_writer)
+        self.make_batch_request(inputs)
 
 
 class UpdateDeal(UpdateObject):
@@ -475,9 +489,9 @@ class RemoveObject(HubSpotClient, ABC):
         pass
 
     @batched()
-    def process_requests(self, data_reader, error_writer):
+    def process_requests(self, data_reader):
         inputs = [{"id": str(row[f"{self.object_type}_id"])} for row in data_reader]
-        self.make_batch_request(inputs, error_writer)
+        self.make_batch_request(inputs)
 
 
 class RemoveCompany(RemoveObject):
@@ -616,12 +630,13 @@ def test_credentials(token: str) -> bool:
     return True
 
 
-def get_factory(endpoint: str, token: str) -> HubSpotClient:
+def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubSpotClient:
     """Constructs an exporter factory based on endpoint selection
 
     Args:
         endpoint: Hubspot API endpoint set in config.json
         token: Private App Token for Hubspot API
+        error_writer: csv.DictWriter for request errors
     """
 
     endpoints = {
@@ -676,7 +691,7 @@ def get_factory(endpoint: str, token: str) -> HubSpotClient:
     }
 
     if endpoint in endpoints:
-        return endpoints[endpoint](endpoint, token)
+        return endpoints[endpoint](endpoint, token, error_writer)
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
@@ -692,5 +707,5 @@ def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter
     Returns:
         None
     """
-    factory = get_factory(endpoint, token)
-    factory.process_requests(data_reader, error_writer)
+    factory = get_factory(endpoint, token, error_writer)
+    factory.process_requests(data_reader)
