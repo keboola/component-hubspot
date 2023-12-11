@@ -14,14 +14,12 @@ from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
 from typing import Literal, Union
 
-from component import ERRORS_TABLE_COLUMNS
-
 import logging
 
 BATCH_SIZE = 100
 LOGGING_INTERVAL = 200
 SLEEP_INTERVAL = 0.1  # https://developers.hubspot.com/docs/api/usage-details#rate-limits
-
+ERRORS_TABLE_COLUMNS = ['status', 'category', 'message', 'context']
 
 def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_interval=SLEEP_INTERVAL):
     def wrapper(func):
