@@ -5,8 +5,8 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'list_create': {
-        'endpoint': 'contacts/v1/lists',
-        'required_column': ['name'],
+        'endpoint': 'crm/v3/lists',
+        'required_column': ['name', 'object_type'],
         'method': 'post'
     },
     'contact_add_to_list': {
@@ -18,6 +18,16 @@ ENDPOINT_MAPPING = {
         'endpoint': 'contacts/v1/lists/{list_id}/remove',
         'required_column': ['list_id', 'vids'],
         'method': 'post'
+    },
+    'company_add_to_list': {
+        'endpoint': 'crm/v3/lists/{list_id}/memberships/add-and-remove',
+        'required_column': ['list_id', 'vids'],
+        'method': 'put'
+    },
+    'company_remove_from_list': {
+        'endpoint': 'crm/v3/lists/{list_id}/memberships/add-and-remove',
+        'required_column': ['list_id', 'vids'],
+        'method': 'put'
     },
     'contact_update': {
         'endpoint': 'crm/v3/objects/contacts/batch/update',

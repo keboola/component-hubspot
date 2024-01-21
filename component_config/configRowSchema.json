@@ -10,19 +10,7 @@
         "contact",
         "company",
         "list",
-        "deal",
-        "ticket",
-        "product",
-        "quote",
-        "line_item",
-        "tax",
-        "call",
-        "communication",
-        "email",
-        "meeting",
-        "note",
-        "postal_mail",
-        "task"
+        "deal"
       ],
       "type": "string",
       "title": "Object",
@@ -32,19 +20,7 @@
           "Contact",
           "Company",
           "List",
-          "Deal",
-          "Ticket",
-          "Product",
-          "Quote",
-          "LineItem",
-          "Tax",
-          "Call",
-          "Communication",
-          "Email",
-          "Meeting",
-          "Note",
-          "PostalMail",
-          "Task"
+          "Deal"
         ]
       }
     },
@@ -76,7 +52,9 @@
       "enum": [
         "create",
         "update",
-        "remove"
+        "remove",
+        "add_to_list",
+        "remove_from_list"
       ],
       "type": "string",
       "title": "Object Action",
@@ -85,7 +63,9 @@
         "enum_titles": [
           "Create",
           "Update",
-          "Remove"
+          "Remove",
+          "Add to List",
+          "Remove from List"
         ],
         "dependencies": {
           "hubspot_object": "company"
