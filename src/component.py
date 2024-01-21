@@ -19,7 +19,6 @@ KEY_OBJECT = 'hubspot_object'
 REQUIRED_PARAMETERS = [
     KEY_OBJECT
 ]
-ERRORS_TABLE_COLUMNS = ['status', 'category', 'message', 'context']
 HUBSPOT_OBJECTS = ("contact", "company", "list", "deal", "ticket", "product", "quote", "line_item", "tax", "call",
                    "communication", "email", "meeting", "note", "postal_mail", "task")
 
@@ -61,7 +60,7 @@ class Component(ComponentBase):
 
         with open(input_table.full_path) as input_file, open(output_table.full_path, 'w', newline='') as output_file:
             reader = csv.DictReader(input_file)
-            error_writer = csv.DictWriter(output_file, fieldnames=ERRORS_TABLE_COLUMNS)
+            error_writer = csv.DictWriter(output_file, fieldnames=hubspot_client.ERRORS_TABLE_COLUMNS)
             error_writer.writeheader()
             error_writer.errors = False
             hubspot_client.run(self.endpoint, reader, error_writer, self.token)
