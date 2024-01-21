@@ -67,8 +67,8 @@ class Component(ComponentBase):
 
             if error_writer.errors:
                 self.write_manifest(output_table)
-                raise UserException(
-                    'There were errors during some requests handling - check errors.csv for more details.')
+                # raise UserException(
+                #     'There were errors during some requests handling - check errors.csv for more details.')
 
     @property
     def hubspot_object(self) -> str:
