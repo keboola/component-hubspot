@@ -116,22 +116,19 @@ class HubSpotClient(ABC):
             response
         """
 
-        if method in ["post", "put", "delete", "patch"]:
-            response = self.s.request(method, url, headers=self.base_headers,
-                                      params=self.base_params, json=request_body)
-            try:
-                response.raise_for_status()
-            except RequestException as e:
-                response_content = response.content if response is not None else None
-                self.log_errors(response)
-                logging.error(f"Cannot process record {request_body}, "
-                              f"HTTP error: {e},"
-                              f"response content: {response_content}")
-                raise UserException(
-                    f"Cannot process record {request_body}, HTTP error: {e}, response content: {response_content}"
-                )
-        else:
+        if method not in ["post", "put", "delete", "patch"]:
             raise UserException(f"Method {method} not allowed.")
+
+        response = self.s.request(method, url, headers=self.base_headers,
+                                  params=self.base_params, json=request_body)
+        try:
+            response.raise_for_status()
+        except RequestException as e:
+            response_content = response.content if response is not None else None
+            self.log_errors(response)
+            logging.error(f"Cannot process record {request_body}, "
+                          f"HTTP error: {e},"
+                          f"response content: {response_content}")
 
         return response
 
