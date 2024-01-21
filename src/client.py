@@ -127,9 +127,9 @@ class HubSpotClient(ABC):
                 logging.error(f"Cannot process record {request_body}, "
                               f"HTTP error: {e},"
                               f"response content: {response_content}")
-                # raise UserException(
-                #     f"Cannot process record {request_body}, HTTP error: {e}, response content: {response_content}"
-                # )
+                raise UserException(
+                    f"Cannot process record {request_body}, HTTP error: {e}, response content: {response_content}"
+                )
         else:
             raise UserException(f"Method {method} not allowed.")
 
