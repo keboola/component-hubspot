@@ -162,7 +162,7 @@ class CreateContact(HubSpotClient):
 
 
 class CreateList(HubSpotClient):
-    """Creates a new contact or company list"""
+    """Creates a new contact, company or deal list"""
 
     def process_requests(self, data_reader):
         object_types_to_id = {
