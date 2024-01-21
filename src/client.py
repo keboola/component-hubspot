@@ -41,6 +41,24 @@ def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_inte
     return wrapper
 
 
+def get_rows_by_list_id(data_reader):
+    rows_by_list_id = defaultdict(list)
+    for row in data_reader:
+        if not row['list_id']:
+            raise UserException('Column [list_id] cannot be empty.')
+        rows_by_list_id[row['list_id']].append(row)
+    return rows_by_list_id
+
+
+def get_vids_from_rows(rows):
+    vids = []
+    for row in rows:
+        if not row['vids']:
+            raise UserException(f"Cannot process list with empty records in [vids] column. {row}")
+        vids.append(row['vids'])
+    return vids
+
+
 class HubSpotClient(ABC):
     """Template for classes handling communication with Hubspot API"""
 
@@ -144,13 +162,23 @@ class CreateContact(HubSpotClient):
 
 
 class CreateList(HubSpotClient):
-    """Creates a new contact list"""
+    """Creates a new contact or company list"""
 
     def process_requests(self, data_reader):
+        object_types_to_id = {
+            'contact': '0-1',
+            'company': '0-2',
+            'deal': '0-3'
+        }
         for row in data_reader:
+            request_body = {
+                'name': str(row['name']),
+                'processingType': 'MANUAL',
+                'objectTypeId': object_types_to_id[row['object_type']]
+            }
             self.make_request(
                 url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
-                request_body={'name': str(row['name'])},
+                request_body=request_body,
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
@@ -158,11 +186,7 @@ class AddContactToList(HubSpotClient):
     """Adds contacts to list"""
 
     def process_requests(self, data_reader):
-        rows_by_list_id = defaultdict(list)
-        for row in data_reader:
-            if not row['list_id']:
-                raise UserException('Column [list_id] cannot be empty.')
-            rows_by_list_id[row['list_id']].append(row)
+        rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
             vids = []
@@ -184,18 +208,10 @@ class RemoveContactFromList(HubSpotClient):
     """Removes contacts from lists"""
 
     def process_requests(self, data_reader):
-        rows_by_list_id = defaultdict(list)
-        for row in data_reader:
-            if not row['list_id']:
-                raise UserException('Column [list_id] cannot be empty.')
-            rows_by_list_id[row['list_id']].append(row)
+        rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
-            vids = []
-            for row in rows:
-                if not row['vids']:
-                    raise UserException(f"Cannot process list with empty records in [vids] column. {row}")
-                vids.append(row['vids'])
+            vids = get_vids_from_rows(rows)
 
             endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(list_id=list_id)
             self.make_request(
@@ -250,6 +266,38 @@ class CreateCompany(HubSpotClient):
             properties = {k: str(v) for k, v in row.items()}
             inputs.append({"properties": properties})
         self.make_batch_request(inputs)
+
+
+class AddCompanyToList(HubSpotClient):
+    """Adds companies to list"""
+
+    def process_requests(self, data_reader):
+        rows_by_list_id = get_rows_by_list_id(data_reader)
+
+        for list_id, rows in rows_by_list_id.items():
+            vids = get_vids_from_rows(rows)
+
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(list_id=list_id)
+            self.make_request(
+                url=f'{self.base_url}{endpoint_path}',
+                request_body={'recordIdsToAdd': vids},
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class RemoveCompanyFromList(HubSpotClient):
+    """Removes companies from lists"""
+
+    def process_requests(self, data_reader):
+        rows_by_list_id = get_rows_by_list_id(data_reader)
+
+        for list_id, rows in rows_by_list_id.items():
+            vids = get_vids_from_rows(rows)
+
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(list_id=list_id)
+            self.make_request(
+                url=f'{self.base_url}{endpoint_path}',
+                request_body={'recordIdsToRemove': vids},
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class UpdateCompany(HubSpotClient):
@@ -648,6 +696,8 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
         "company_create": CreateCompany,
         "company_update": UpdateCompany,
         "company_remove": RemoveCompany,
+        "company_add_to_list": AddCompanyToList,
+        "company_remove_from_list": RemoveCompanyFromList,
         "deal_create": CreateDeal,
         "deal_update": UpdateDeal,
         "deal_remove": RemoveDeal,
