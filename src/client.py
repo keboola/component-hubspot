@@ -124,11 +124,7 @@ class HubSpotClient(ABC):
         try:
             response.raise_for_status()
         except RequestException as e:
-            response_content = response.content if response is not None else None
             self.log_errors(response)
-            logging.error(f"Cannot process record {request_body}, "
-                          f"HTTP error: {e},"
-                          f"response content: {response_content}")
 
         return response
 
@@ -158,8 +154,22 @@ class CreateContact(HubSpotClient):
         self.make_batch_request(inputs)
 
 
-class CreateList(HubSpotClient):
-    """Creates a new contact, company or deal list"""
+class CreateContactList(HubSpotClient):
+    """Creates a new contact list"""
+
+    def process_requests(self, data_in):
+        for row in data_in:
+            request_body = {
+                'name': str(row['name'])
+            }
+            self.make_request(
+                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
+                request_body=request_body,
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class CreateCustomList(HubSpotClient):
+    """Creates list for custom objects specified in the input table via object_type column"""
 
     def process_requests(self, data_reader):
         object_types_to_id = {
@@ -685,7 +695,8 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
 
     endpoints = {
         "contact_create": CreateContact,
-        "list_create": CreateList,
+        "list_create": CreateContactList,
+        "custom_list_create": CreateCustomList,
         "contact_add_to_list": AddContactToList,
         "contact_remove_from_list": RemoveContactFromList,
         "contact_update": UpdateContact,
