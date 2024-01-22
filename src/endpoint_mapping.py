@@ -5,6 +5,11 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'list_create': {
+        'endpoint': 'contacts/v1/lists',
+        'required_column': ['name'],
+        'method': 'post'
+    },
+    'custom_list_create': {
         'endpoint': 'crm/v3/lists',
         'required_column': ['name', 'object_type'],
         'method': 'post'

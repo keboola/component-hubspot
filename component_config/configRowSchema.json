@@ -10,7 +10,8 @@
         "contact",
         "company",
         "list",
-        "deal"
+        "deal",
+        "custom_list"
       ],
       "type": "string",
       "title": "Object",
@@ -19,8 +20,9 @@
         "enum_titles": [
           "Contact",
           "Company",
-          "List",
-          "Deal"
+          "Contact List",
+          "Deal",
+          "Custom List"
         ]
       }
     },
@@ -72,7 +74,7 @@
         }
       }
     },
-    "list_action": {
+    "contact_list_action": {
       "enum": [
         "create"
       ],
@@ -85,6 +87,22 @@
         ],
         "dependencies": {
           "hubspot_object": "list"
+        }
+      }
+    },
+    "custom_list_action": {
+      "enum": [
+        "create"
+      ],
+      "type": "string",
+      "title": "Object Action",
+      "propertyOrder": 211,
+      "options": {
+        "enum_titles": [
+          "Create"
+        ],
+        "dependencies": {
+          "hubspot_object": "custom_list"
         }
       }
     },
