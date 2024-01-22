@@ -123,7 +123,7 @@ class HubSpotClient(ABC):
                                   params=self.base_params, json=request_body)
         try:
             response.raise_for_status()
-        except RequestException as e:
+        except RequestException:
             self.log_errors(response)
 
         return response
