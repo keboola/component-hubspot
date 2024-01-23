@@ -110,7 +110,8 @@
       "enum": [
         "create",
         "update",
-        "remove"
+        "remove",
+        "add_to_list"
       ],
       "type": "string",
       "title": "Object Action",
@@ -119,7 +120,8 @@
         "enum_titles": [
           "Create",
           "Update",
-          "Remove"
+          "Remove",
+          "Add to list"
         ],
         "dependencies": {
           "hubspot_object": "deal"
