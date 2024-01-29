@@ -275,10 +275,10 @@ class CreateCompany(HubSpotClient):
         self.make_batch_request(inputs)
 
 
-class AddCompanyToList(HubSpotClient):
-    """Adds companies to list"""
+class AddObjectToList(HubSpotClient):
+    """Parent class for adding Objects to list using List ID and Object ID"""
 
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader) -> None:
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -291,8 +291,16 @@ class AddCompanyToList(HubSpotClient):
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
-class RemoveCompanyFromList(HubSpotClient):
-    """Removes companies from lists"""
+class AddCompanyToList(AddObjectToList):
+    """Adds companies to list"""
+
+
+class AddDealToList(AddObjectToList):
+    """Adds deals to list"""
+
+
+class RemoveObjectFromList(HubSpotClient):
+    """Parent class for removing Objects from list using List ID and Object ID"""
 
     def process_requests(self, data_reader):
         rows_by_list_id = get_rows_by_list_id(data_reader)
@@ -305,6 +313,14 @@ class RemoveCompanyFromList(HubSpotClient):
                 url=f'{self.base_url}{endpoint_path}',
                 request_body={'recordIdsToRemove': vids},
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class RemoveCompanyFromList(RemoveObjectFromList):
+    """Removes companies from list"""
+
+
+class RemoveDealFromList(RemoveObjectFromList):
+    """Removes deals from list"""
 
 
 class UpdateCompany(HubSpotClient):
@@ -709,6 +725,8 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
         "deal_create": CreateDeal,
         "deal_update": UpdateDeal,
         "deal_remove": RemoveDeal,
+        "deal_add_to_list": AddDealToList,
+        "deal_remove_from_list": RemoveDealFromList,
         "ticket_create": CreateTicket,
         "ticket_update": UpdateTicket,
         "ticket_remove": RemoveTicket,
