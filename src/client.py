@@ -31,7 +31,6 @@ def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_inte
                 data_batch.append(record)
                 if not i % batch_size:
                     func(self, data_batch, *args, **kwargs)
-                    time.sleep(sleep_interval)
                     data_batch = []
                 if not i % logging_interval:
                     logging.info(f'Processed {i} rows.')
@@ -76,7 +75,7 @@ class HubSpotClient(ABC):
                          max_retries=Retry(
                              total=5,
                              backoff_factor=0.3,  # {backoff factor} * (2 ** ({number of total retries} - 1))
-                             status_forcelist=[500, 502, 503, 504, 521],
+                             status_forcelist=[429, 500, 502, 503, 504, 521],
                              allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
 
     @abstractmethod
@@ -104,13 +103,15 @@ class HubSpotClient(ABC):
         self.error_writer.writerow(error_row)
 
     def make_request(self, url: str, request_body: Union[dict, None],
-                     method: Literal["post", "put", "delete"]) -> Response:
+                     method: Literal["post", "put", "delete"],
+                     sleep_interval: Union[int, float] = SLEEP_INTERVAL) -> Response:
         """
         Makes Post/Put/Delete calls to target url.
         Args:
             url: complete target url
             request_body: dict that will be sent in POST
             method: post/put/delete defined in endpoint_mapping.py
+            sleep_interval: interval to sleep in seconds between requests
 
         Returns:
             response
@@ -126,6 +127,7 @@ class HubSpotClient(ABC):
         except RequestException:
             self.log_errors(response)
 
+        time.sleep(sleep_interval)
         return response
 
     def make_batch_request(self, inputs: list):
