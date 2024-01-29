@@ -74,6 +74,16 @@ ENDPOINT_MAPPING = {
         'required_column': ['deal_id'],
         'method': 'post'
     },
+    'deal_add_to_list': {
+        'endpoint': 'crm/v3/lists/{list_id}/memberships/add-and-remove',
+        'required_column': ['list_id', 'vids'],
+        'method': 'put'
+    },
+    'deal_remove_from_list': {
+        'endpoint': 'crm/v3/lists/{list_id}/memberships/add-and-remove',
+        'required_column': ['list_id', 'vids'],
+        'method': 'put'
+    },
     'ticket_create': {
         'endpoint': 'crm/v3/objects/tickets/batch/create',
         'required_column': ['association_id', 'association_category', 'association_type_id'],
