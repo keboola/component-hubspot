@@ -36,7 +36,7 @@ class HubSpotClient(ABC):
                          max_retries=Retry(
                              total=5,
                              backoff_factor=0.3,  # {backoff factor} * (2 ** ({number of total retries} - 1))
-                             status_forcelist=[500, 502, 503, 504, 521],
+                             status_forcelist=[500, 502, 503, 504, 521, 429],
                              allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
 
     @abstractmethod
