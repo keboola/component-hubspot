@@ -4,10 +4,8 @@ The HubSpot CRM helps companies grow traffic, convert leads, get insights to clo
 Keboola Hubspot Writer will provide users the assistance to maintain and manage their contacts within Hubspot.  
   
 ## Requirement  
-There are two ways to authorize for Hubspot API.
-
- 1. **Hapikey** - Your Hubspot API key, This will be soon deprecated, see more ([here](https://developers.hubspot.com/changelog/upcoming-api-key-sunset))  
- 2. **Private App Token** - See how to create and assign permissions ([here](https://developers.hubspot.com/docs/api/private-apps))
+Hubspot API authorization.
+**Private App Token** - See how to create and assign permissions ([here](https://developers.hubspot.com/docs/api/private-apps))
   
 ## Configuration  
   
