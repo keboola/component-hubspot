@@ -16,7 +16,7 @@ from typing import Literal, Union
 
 import logging
 
-BATCH_SIZE = 2
+BATCH_SIZE = 100
 LOGGING_INTERVAL = 200
 SLEEP_INTERVAL = 0.1  # https://developers.hubspot.com/docs/api/usage-details#rate-limits
 ERRORS_TABLE_COLUMNS = ['status', 'category', 'message', 'context']
