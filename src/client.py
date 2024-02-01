@@ -16,7 +16,7 @@ from typing import Literal, Union
 
 import logging
 
-BATCH_SIZE = 100
+BATCH_SIZE = 2
 LOGGING_INTERVAL = 200
 SLEEP_INTERVAL = 0.1  # https://developers.hubspot.com/docs/api/usage-details#rate-limits
 ERRORS_TABLE_COLUMNS = ['status', 'category', 'message', 'context']
@@ -56,6 +56,16 @@ def get_vids_from_rows(rows):
             raise UserException(f"Cannot process list with empty records in [vids] column. {row}")
         vids.append(row['vids'])
     return vids
+
+
+def remove_duplicates_by_key(inputs, key):
+    seen = set()
+    deduplicated = []
+    for item in inputs[::-1]:
+        if item[key] not in seen:
+            seen.add(item[key])
+            deduplicated.append(item)
+    return deduplicated
 
 
 class HubSpotClient(ABC):
@@ -243,6 +253,7 @@ class UpdateContact(HubSpotClient):
                 "id": row.pop('vid'),
                 "properties": {k: str(v) for k, v in row.items()}
             })
+        inputs = remove_duplicates_by_key(inputs, key='id')
         self.make_batch_request(inputs)
 
 
@@ -339,6 +350,7 @@ class UpdateCompany(HubSpotClient):
                 "id": row.pop("company_id"),
                 "properties": {k: str(v) for k, v in row.items()}
             })
+        inputs = remove_duplicates_by_key(inputs, key='id')
         self.make_batch_request(inputs)
 
 
@@ -445,6 +457,7 @@ class UpdateObject(HubSpotClient, ABC):
                 "id": str(row.pop(f'{self.object_type}_id')),
                 "properties": row
             })
+        inputs = remove_duplicates_by_key(inputs, key='id')
         self.make_batch_request(inputs)
 
 
