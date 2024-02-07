@@ -20,7 +20,7 @@ REQUIRED_PARAMETERS = [
     KEY_OBJECT
 ]
 HUBSPOT_OBJECTS = ("contact", "company", "list", "deal", "ticket", "product", "quote", "line_item", "tax", "call",
-                   "communication", "email", "meeting", "note", "postal_mail", "task")
+                   "communication", "email", "meeting", "note", "postal_mail", "task", "custom_list")
 
 
 def coalesce(*arg):
