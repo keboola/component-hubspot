@@ -25,9 +25,9 @@ ERRORS_TABLE_COLUMNS = ['status', 'category', 'message', 'context']
 def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_interval=SLEEP_INTERVAL):
     def wrapper(func):
         @wraps(func)
-        def inner(self, data, *args, **kwargs):
+        def inner(self, data_reader, *args, **kwargs):
             data_batch = []
-            for i, record in enumerate(data, start=1):
+            for i, record in enumerate(data_reader, start=1):
                 data_batch.append(record)
                 if not i % batch_size:
                     func(self, data_batch, *args, **kwargs)
@@ -79,7 +79,7 @@ class HubSpotClient(ABC):
                              allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
 
     @abstractmethod
-    def process_requests(self, data_reader) -> None:
+    def process_requests(self, **kwargs) -> None:
         """
         Handles the assembly of URLs to call and request bodies to send.
         Args:
@@ -151,7 +151,7 @@ class CreateContact(HubSpotClient):
     """Creates contacts in batches"""
 
     @batched()
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         inputs = [{"properties": {k: str(v) for k, v in row.items()}} for row in data_reader]
         self.make_batch_request(inputs)
 
@@ -159,8 +159,8 @@ class CreateContact(HubSpotClient):
 class CreateContactList(HubSpotClient):
     """Creates a new contact list"""
 
-    def process_requests(self, data_in):
-        for row in data_in:
+    def process_requests(self, data_reader, **kwargs):
+        for row in data_reader:
             request_body = {
                 'name': str(row['name'])
             }
@@ -173,7 +173,7 @@ class CreateContactList(HubSpotClient):
 class CreateCustomList(HubSpotClient):
     """Creates list for custom objects specified in the input table via object_type column"""
 
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         object_types_to_id = {
             'contact': '0-1',
             'company': '0-2',
@@ -194,7 +194,7 @@ class CreateCustomList(HubSpotClient):
 class AddContactToList(HubSpotClient):
     """Adds contacts to list"""
 
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -216,7 +216,7 @@ class AddContactToList(HubSpotClient):
 class RemoveContactFromList(HubSpotClient):
     """Removes contacts from lists"""
 
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -233,7 +233,7 @@ class UpdateContact(HubSpotClient):
     """Updates contacts"""
 
     @batched()
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         inputs = []
         for row in data_reader:
             if not row["vid"]:
@@ -249,7 +249,7 @@ class UpdateContact(HubSpotClient):
 class UpdateContactByEmail(HubSpotClient):
     """Updates contacts using email as ID"""
 
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         for row in data_reader:
             if not row["email"]:
                 raise UserException(f"Cannot process list with empty records in [email] column. {row}")
@@ -267,7 +267,7 @@ class CreateCompany(HubSpotClient):
     """Creates company"""
 
     @batched()
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         inputs = []
         for row in data_reader:
             if not row["name"]:
@@ -280,7 +280,7 @@ class CreateCompany(HubSpotClient):
 class AddObjectToList(HubSpotClient):
     """Parent class for adding Objects to list using List ID and Object ID"""
 
-    def process_requests(self, data_reader) -> None:
+    def process_requests(self, data_reader, **kwargs) -> None:
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -304,7 +304,7 @@ class AddDealToList(AddObjectToList):
 class RemoveObjectFromList(HubSpotClient):
     """Parent class for removing Objects from list using List ID and Object ID"""
 
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -329,7 +329,7 @@ class UpdateCompany(HubSpotClient):
     """Updates company using company ID"""
 
     @batched()
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         inputs = []
         for row in data_reader:
             if not row["company_id"]:
@@ -346,7 +346,7 @@ class CreateDeal(HubSpotClient):
     """Creates deals"""
 
     @batched()
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         # /crm/v3/objects/deals/batch/create
         inputs = []
         for row in data_reader:
@@ -361,7 +361,7 @@ class CreateAssociatedObject(HubSpotClient):
     """Parent class to CRM objects with association - creates objects"""
 
     @batched()
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         inputs = []
         for row in data_reader:
             if not row["association_id"]:
@@ -434,7 +434,7 @@ class UpdateObject(HubSpotClient, ABC):
         pass
 
     @batched()
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         inputs = []
         for row in data_reader:
             if not row[f"{self.object_type}_id"]:
@@ -561,7 +561,7 @@ class RemoveObject(HubSpotClient, ABC):
         pass
 
     @batched()
-    def process_requests(self, data_reader):
+    def process_requests(self, data_reader, **kwargs):
         inputs = [{"id": str(row[f"{self.object_type}_id"])} for row in data_reader]
         self.make_batch_request(inputs)
 
@@ -676,6 +676,36 @@ class RemoveTask(RemoveObject):
         return 'task'
 
 
+class AssociationCreate(HubSpotClient):
+    """Creates associations between objects in batches"""
+
+    def process_requests(self, data_reader, **kwargs):
+        inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
+
+        endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
+            from_object_type=kwargs.get("from_object_type"),
+            to_object_type=kwargs.get("to_object_type"))
+
+        self.make_request(url=f'{self.base_url}{endpoint_path}',
+                          request_body={'inputs': inputs},
+                          method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class AssociationRemove(HubSpotClient):
+    """Creates associations between objects in batches"""
+
+    def process_requests(self, data_reader, **kwargs):
+        inputs = [{'from': str(row['from']), 'to': [str(row['to'])]} for row in data_reader]
+
+        endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
+            from_object_type=kwargs.get("from_object_type"),
+            to_object_type=kwargs.get("to_object_type"))
+
+        self.make_request(url=f'{self.base_url}{endpoint_path}',
+                          request_body={'inputs': inputs},
+                          method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
 def test_credentials(token: str) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of token.
@@ -764,7 +794,9 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
         "postal_mail_remove": RemovePostalMail,
         "task_create": CreateTask,
         "task_update": UpdateTask,
-        "task_remove": RemoveTask
+        "task_remove": RemoveTask,
+        "association_create": AssociationCreate,
+        "association_delete": AssociationRemove
     }
 
     if endpoint in endpoints:
@@ -772,11 +804,11 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
-def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, token: str) -> None:
+def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, params: dict) -> None:
     """
     Main entrypoint to call.
     Args:
-        token: Private App Token for Hubspot API
+        params: Config parameters
         endpoint: Hubspot API endpoint
         data_reader: csv.DictReader object with data from input csv
         error_writer: csv.DictWriter object to log 207 status_code events
@@ -784,5 +816,7 @@ def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter
     Returns:
         None
     """
-    factory = get_factory(endpoint, token, error_writer)
-    factory.process_requests(data_reader)
+    factory = get_factory(endpoint, params.get("#private_app_token"), error_writer)
+    factory.process_requests(data_reader=data_reader,
+                             from_object_type=params.get("from_object_type"),
+                             to_object_type=params.get("to_object_type"))
