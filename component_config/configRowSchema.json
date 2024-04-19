@@ -398,17 +398,10 @@
         "0-49",
         "0-47",
         "0-4",
-        "0-27",
-        "0-7",
-        "0-52",
-        "0-8",
-        "0-101",
-        "0-14",
-        "0-69",
-        "0-18",
         "0-116",
-        "0-54",
-        "0-19"
+        "0-14",
+        "0-27",
+        "0-18"
       ],
       "options": {
         "dependencies": {
@@ -423,23 +416,16 @@
           "Emails",
           "Meetings",
           "Notes",
-          "Tasks",
-          "Products",
-          "Invoices",
-          "Line items",
-          "Payments",
-          "Quotes",
-          "Subscriptions",
-          "Communications (SMS, LinkedIn, WhatsApp messages)",
           "Postal mail",
-          "Marketing events",
-          "Feedback submissions"
+          "Quotes",
+          "Tasks",
+          "Communications (SMS, LinkedIn, WhatsApp messages)"
         ]
       },
       "propertyOrder": 221,
       "title": "From Object Type"
     },
-    "to_object_type": {
+    "to_object_type_contact": {
       "enum": [
         "0-1",
         "0-2",
@@ -450,20 +436,12 @@
         "0-47",
         "0-4",
         "0-27",
-        "0-7",
-        "0-52",
-        "0-8",
-        "0-101",
-        "0-14",
-        "0-69",
         "0-18",
-        "0-116",
-        "0-54",
-        "0-19"
+        "0-116"
       ],
       "options": {
         "dependencies": {
-          "hubspot_object": "association"
+          "from_object_type": "0-1"
         },
         "enum_titles": [
           "Contacts",
@@ -475,16 +453,162 @@
           "Meetings",
           "Notes",
           "Tasks",
-          "Products",
-          "Invoices",
-          "Line items",
-          "Payments",
-          "Quotes",
-          "Subscriptions",
+          "Communications (SMS, LinkedIn, WhatsApp messages)",
+          "Postal mail"
+        ]
+      },
+      "propertyOrder": 231,
+      "title": "To Object Type"
+    },
+    "to_object_type_company": {
+      "enum": [
+        "0-1",
+        "0-2",
+        "0-3",
+        "0-5",
+        "0-48",
+        "0-49",
+        "0-47",
+        "0-4",
+        "0-27",
+        "0-18",
+        "0-116"
+      ],
+      "options": {
+        "dependencies": {
+          "from_object_type": "0-2"
+        },
+        "enum_titles": [
+          "Contacts",
+          "Companies",
+          "Deals",
+          "Tickets",
+          "Calls",
+          "Emails",
+          "Meetings",
+          "Notes",
+          "Tasks",
+          "Communications (SMS, LinkedIn, WhatsApp messages)",
+          "Postal mail"
+        ]
+      },
+      "propertyOrder": 231,
+      "title": "To Object Type"
+    },
+    "to_object_type_deal": {
+      "enum": [
+        "0-1",
+        "0-2",
+        "0-3",
+        "0-5",
+        "0-48",
+        "0-49",
+        "0-47",
+        "0-4",
+        "0-27",
+        "0-18",
+        "0-116",
+        "0-8",
+        "0-7",
+        "0-14"
+      ],
+      "options": {
+        "dependencies": {
+          "from_object_type": "0-3"
+        },
+        "enum_titles": [
+          "Contacts",
+          "Companies",
+          "Deals",
+          "Tickets",
+          "Calls",
+          "Emails",
+          "Meetings",
+          "Notes",
+          "Tasks",
           "Communications (SMS, LinkedIn, WhatsApp messages)",
           "Postal mail",
-          "Marketing events",
-          "Feedback submissions"
+          "Line item",
+          "Product",
+          "Quote"
+        ]
+      },
+      "propertyOrder": 231,
+      "title": "To Object Type"
+    },
+    "to_object_type_ticket": {
+      "enum": [
+        "0-1",
+        "0-2",
+        "0-3",
+        "0-5",
+        "0-48",
+        "0-49",
+        "0-47",
+        "0-4",
+        "0-27",
+        "0-18",
+        "0-116"
+      ],
+      "options": {
+        "dependencies": {
+          "from_object_type": "0-5"
+        },
+        "enum_titles": [
+          "Contacts",
+          "Companies",
+          "Deals",
+          "Tickets",
+          "Calls",
+          "Emails",
+          "Meetings",
+          "Notes",
+          "Tasks",
+          "Communications (SMS, LinkedIn, WhatsApp messages)",
+          "Postal mail"
+        ]
+      },
+      "propertyOrder": 231,
+      "title": "To Object Type"
+    },
+    "to_object_type_four": {
+      "enum": [
+        "0-1",
+        "0-2",
+        "0-3",
+        "0-5"
+      ],
+      "options": {
+        "dependencies": {
+          "from_object_type": ["0-48", "0-49", "0-47", "0-4", "0-116", "0-27", "0-18"]
+        },
+        "enum_titles": [
+          "Contacts",
+          "Companies",
+          "Deals",
+          "Tickets"
+        ]
+      },
+      "propertyOrder": 231,
+      "title": "To Object Type"
+    },
+    "to_object_type_quote": {
+      "enum": [
+        "0-1",
+        "0-2",
+        "0-3",
+        "0-8"
+
+      ],
+      "options": {
+        "dependencies": {
+          "from_object_type": ["0-14"]
+        },
+        "enum_titles": [
+          "Contacts",
+          "Companies",
+          "Deals",
+          "Line item"
         ]
       },
       "propertyOrder": 231,

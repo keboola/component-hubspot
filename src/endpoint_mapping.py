@@ -269,7 +269,7 @@ ENDPOINT_MAPPING = {
         'required_column': ['from', 'to'],
         'method': 'post'
     },
-    'association_delete': {
+    'association_remove': {
         'endpoint': 'crm/v4/associations/{from_object_type}/{to_object_type}/batch/archive',
         'required_column': ['from', 'to'],
         'method': 'post'

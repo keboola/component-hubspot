@@ -796,7 +796,7 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
         "task_update": UpdateTask,
         "task_remove": RemoveTask,
         "association_create": AssociationCreate,
-        "association_delete": AssociationRemove
+        "association_remove": AssociationRemove
     }
 
     if endpoint in endpoints:
