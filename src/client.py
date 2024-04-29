@@ -36,7 +36,9 @@ def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_inte
                     logging.info(f'Processed {i} rows.')
             if data_batch:
                 func(self, data_batch, *args, **kwargs)
+
         return inner
+
     return wrapper
 
 
@@ -357,6 +359,29 @@ class CreateDeal(HubSpotClient):
         self.make_batch_request(inputs)
 
 
+class CreateLineItem(HubSpotClient):
+    """Creates line items"""
+
+    @batched()
+    def process_requests(self, data_reader):
+        optional_cols = "association_id", "association_category", "association_type_id"
+        inputs = []
+
+        for row in data_reader:
+            if not set(row.keys()).issubset(optional_cols):
+                logging.warning(f"The association is not set, it will be write without, if you need, please add "
+                                f"[association_id, association_category, association_type_id] columns. {row}")
+            associations = [{
+                'to': {'id': str(row.pop('association_id'))},
+                'types': [{
+                    'associationCategory': row.pop('association_category'),
+                    'associationTypeId': row.pop('association_type_id')
+                }]
+            }]
+            inputs.append({"associations": associations, "properties": row})
+        self.make_batch_request(inputs)
+
+
 class CreateAssociatedObject(HubSpotClient):
     """Parent class to CRM objects with association - creates objects"""
 
@@ -387,10 +412,6 @@ class CreateProduct(CreateAssociatedObject):
 
 class CreateQuote(CreateAssociatedObject):
     """Creates quotes"""
-
-
-class CreateLineItem(CreateAssociatedObject):
-    """Creates line items"""
 
 
 class CreateTax(CreateAssociatedObject):
@@ -592,6 +613,7 @@ class RemoveTicket(RemoveObject):
 
 class RemoveProduct(RemoveObject):
     """Removes Product using product_id"""
+
     @property
     def object_type(self) -> str:
         return 'product'
@@ -607,6 +629,7 @@ class RemoveQuote(RemoveObject):
 
 class RemoveLineItem(RemoveObject):
     """Removes Line item using line_item_id"""
+
     @property
     def object_type(self) -> str:
         return 'line_item'

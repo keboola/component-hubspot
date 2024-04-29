@@ -131,7 +131,7 @@ ENDPOINT_MAPPING = {
     },
     'line_item_create': {
         'endpoint': 'crm/v3/objects/line_items/batch/create',
-        'required_column': ['association_id', 'association_category', 'association_type_id'],
+        'required_column': ['name', 'price', 'quantity'],
         'method': 'post'
     },
     'line_item_update': {
