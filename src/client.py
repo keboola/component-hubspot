@@ -371,14 +371,15 @@ class CreateLineItem(HubSpotClient):
             if not set(row.keys()).issubset(optional_cols):
                 logging.warning(f"The association is not set, it will be write without, if you need, please add "
                                 f"[association_id, association_category, association_type_id] columns. {row}")
-            associations = [{
-                'to': {'id': str(row.pop('association_id'))},
-                'types': [{
-                    'associationCategory': row.pop('association_category'),
-                    'associationTypeId': row.pop('association_type_id')
+            else:
+                associations = [{
+                    'to': {'id': str(row.pop('association_id'))},
+                    'types': [{
+                        'associationCategory': row.pop('association_category'),
+                        'associationTypeId': row.pop('association_type_id')
+                    }]
                 }]
-            }]
-            inputs.append({"associations": associations, "properties": row})
+                inputs.append({"associations": associations, "properties": row})
         self.make_batch_request(inputs)
 
 
