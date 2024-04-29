@@ -12,6 +12,7 @@
         "list",
         "deal",
         "custom_list",
+        "line_item",
         "association"
       ],
       "type": "string",
@@ -24,6 +25,7 @@
           "Contact List",
           "Deal",
           "Custom List",
+          "Line Item",
           "Association"
         ]
       }
