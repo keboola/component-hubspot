@@ -11,7 +11,8 @@
         "company",
         "list",
         "deal",
-        "custom_list"
+        "custom_list",
+        "line_item"
       ],
       "type": "string",
       "title": "Object",
@@ -22,7 +23,8 @@
           "Company",
           "Contact List",
           "Deal",
-          "Custom List"
+          "Custom List",
+          "Line Item"
         ]
       }
     },
