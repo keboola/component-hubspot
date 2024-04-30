@@ -682,28 +682,32 @@ class AssociationCreate(HubSpotClient):
     def process_requests(self, data_reader, **kwargs):
         inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
 
-        endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
-            from_object_type=kwargs.get("from_object_type"),
-            to_object_type=kwargs.get("to_object_type"))
+        for line in inputs:
 
-        self.make_request(url=f'{self.base_url}{endpoint_path}',
-                          request_body={'inputs': inputs},
-                          method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
+                from_object_type=line.get("from_object_type"),
+                to_object_type=line.get("to_object_type"))
+
+            self.make_request(url=f'{self.base_url}{endpoint_path}',
+                              request_body={'inputs': [{'from': line['from_id'], 'to': line['to_id']}]},
+                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 class AssociationRemove(HubSpotClient):
     """Creates associations between objects in batches"""
 
     def process_requests(self, data_reader, **kwargs):
-        inputs = [{'from': str(row['from']), 'to': [str(row['to'])]} for row in data_reader]
+        inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
 
-        endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
-            from_object_type=kwargs.get("from_object_type"),
-            to_object_type=kwargs.get("to_object_type"))
+        for line in inputs:
 
-        self.make_request(url=f'{self.base_url}{endpoint_path}',
-                          request_body={'inputs': inputs},
-                          method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
+                from_object_type=line.get("from_object_type"),
+                to_object_type=line.get("to_object_type"))
+
+            self.make_request(url=f'{self.base_url}{endpoint_path}',
+                              request_body={'inputs': [{'from': line['from_id'], 'to': [line['to_id']]}]},
+                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
 def test_credentials(token: str) -> bool:
@@ -817,6 +821,4 @@ def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter
         None
     """
     factory = get_factory(endpoint, params.get("#private_app_token"), error_writer)
-    factory.process_requests(data_reader=data_reader,
-                             from_object_type=params.get("from_object_type"),
-                             to_object_type=params.get("to_object_type"))
+    factory.process_requests(data_reader=data_reader)
