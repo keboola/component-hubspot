@@ -42,9 +42,6 @@ class Component(ComponentBase):
         if authentication_type != "Private App Token":
             raise ValueError(f"Invalid authentication type: {authentication_type}")
 
-        if self.params.get("hubspot_object") == "association":
-            self.to_object_type()
-
         # Input tables
         in_tables = self.get_input_tables_definitions()
         input_table = in_tables[0]
@@ -88,11 +85,6 @@ class Component(ComponentBase):
         if action is None and self.hubspot_object not in list(LEGACY_ENDPOINT_MAPPING_CONVERSION.keys()):
             raise UserException("A valid Object action must be provided.")
         return action
-
-    def to_object_type(self) -> None:
-        object_types = [value for key, value in self.params.items() if key.startswith('to_object_type_')]
-        if object_types[0] is not None:
-            self.params['to_object_type'] = object_types[0]
 
     def validate_user_input(self, table: dao.TableDefinition):
 

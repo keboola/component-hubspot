@@ -79,7 +79,7 @@ class HubSpotClient(ABC):
                              allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
 
     @abstractmethod
-    def process_requests(self, **kwargs) -> None:
+    def process_requests(self, data_reader) -> None:
         """
         Handles the assembly of URLs to call and request bodies to send.
         Args:
@@ -151,7 +151,7 @@ class CreateContact(HubSpotClient):
     """Creates contacts in batches"""
 
     @batched()
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = [{"properties": {k: str(v) for k, v in row.items()}} for row in data_reader]
         self.make_batch_request(inputs)
 
@@ -159,7 +159,7 @@ class CreateContact(HubSpotClient):
 class CreateContactList(HubSpotClient):
     """Creates a new contact list"""
 
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         for row in data_reader:
             request_body = {
                 'name': str(row['name'])
@@ -173,7 +173,7 @@ class CreateContactList(HubSpotClient):
 class CreateCustomList(HubSpotClient):
     """Creates list for custom objects specified in the input table via object_type column"""
 
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         object_types_to_id = {
             'contact': '0-1',
             'company': '0-2',
@@ -194,7 +194,7 @@ class CreateCustomList(HubSpotClient):
 class AddContactToList(HubSpotClient):
     """Adds contacts to list"""
 
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -216,7 +216,7 @@ class AddContactToList(HubSpotClient):
 class RemoveContactFromList(HubSpotClient):
     """Removes contacts from lists"""
 
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -233,7 +233,7 @@ class UpdateContact(HubSpotClient):
     """Updates contacts"""
 
     @batched()
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row["vid"]:
@@ -249,7 +249,7 @@ class UpdateContact(HubSpotClient):
 class UpdateContactByEmail(HubSpotClient):
     """Updates contacts using email as ID"""
 
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         for row in data_reader:
             if not row["email"]:
                 raise UserException(f"Cannot process list with empty records in [email] column. {row}")
@@ -267,7 +267,7 @@ class CreateCompany(HubSpotClient):
     """Creates company"""
 
     @batched()
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row["name"]:
@@ -280,7 +280,7 @@ class CreateCompany(HubSpotClient):
 class AddObjectToList(HubSpotClient):
     """Parent class for adding Objects to list using List ID and Object ID"""
 
-    def process_requests(self, data_reader, **kwargs) -> None:
+    def process_requests(self, data_reader) -> None:
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -304,7 +304,7 @@ class AddDealToList(AddObjectToList):
 class RemoveObjectFromList(HubSpotClient):
     """Parent class for removing Objects from list using List ID and Object ID"""
 
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         rows_by_list_id = get_rows_by_list_id(data_reader)
 
         for list_id, rows in rows_by_list_id.items():
@@ -329,7 +329,7 @@ class UpdateCompany(HubSpotClient):
     """Updates company using company ID"""
 
     @batched()
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row["company_id"]:
@@ -346,7 +346,7 @@ class CreateDeal(HubSpotClient):
     """Creates deals"""
 
     @batched()
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         # /crm/v3/objects/deals/batch/create
         inputs = []
         for row in data_reader:
@@ -361,7 +361,7 @@ class CreateAssociatedObject(HubSpotClient):
     """Parent class to CRM objects with association - creates objects"""
 
     @batched()
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row["association_id"]:
@@ -434,7 +434,7 @@ class UpdateObject(HubSpotClient, ABC):
         pass
 
     @batched()
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = []
         for row in data_reader:
             if not row[f"{self.object_type}_id"]:
@@ -561,7 +561,7 @@ class RemoveObject(HubSpotClient, ABC):
         pass
 
     @batched()
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = [{"id": str(row[f"{self.object_type}_id"])} for row in data_reader]
         self.make_batch_request(inputs)
 
@@ -679,7 +679,7 @@ class RemoveTask(RemoveObject):
 class AssociationCreate(HubSpotClient):
     """Creates associations between objects in batches"""
 
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
 
         for line in inputs:
@@ -696,7 +696,7 @@ class AssociationCreate(HubSpotClient):
 class AssociationRemove(HubSpotClient):
     """Creates associations between objects in batches"""
 
-    def process_requests(self, data_reader, **kwargs):
+    def process_requests(self, data_reader):
         inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
 
         for line in inputs:
