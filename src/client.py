@@ -36,7 +36,9 @@ def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_inte
                     logging.info(f'Processed {i} rows.')
             if data_batch:
                 func(self, data_batch, *args, **kwargs)
+
         return inner
+
     return wrapper
 
 
@@ -389,10 +391,6 @@ class CreateQuote(CreateAssociatedObject):
     """Creates quotes"""
 
 
-class CreateLineItem(CreateAssociatedObject):
-    """Creates line items"""
-
-
 class CreateTax(CreateAssociatedObject):
     """Creates taxes"""
 
@@ -403,6 +401,10 @@ class CreateCall(CreateAssociatedObject):
 
 class CreateCommunication(CreateAssociatedObject):
     """Creates communications"""
+
+
+class CreateLineItem(CreateAssociatedObject):
+    """Creates line items"""
 
 
 class CreateEmail(CreateAssociatedObject):
@@ -592,6 +594,7 @@ class RemoveTicket(RemoveObject):
 
 class RemoveProduct(RemoveObject):
     """Removes Product using product_id"""
+
     @property
     def object_type(self) -> str:
         return 'product'
@@ -607,6 +610,7 @@ class RemoveQuote(RemoveObject):
 
 class RemoveLineItem(RemoveObject):
     """Removes Line item using line_item_id"""
+
     @property
     def object_type(self) -> str:
         return 'line_item'
@@ -683,7 +687,6 @@ class AssociationCreate(HubSpotClient):
         inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
 
         for line in inputs:
-
             endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
                 from_object_type=line.get("from_object_type"),
                 to_object_type=line.get("to_object_type"))
@@ -700,7 +703,6 @@ class AssociationRemove(HubSpotClient):
         inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
 
         for line in inputs:
-
             endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
                 from_object_type=line.get("from_object_type"),
                 to_object_type=line.get("to_object_type"))
