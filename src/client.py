@@ -359,30 +359,6 @@ class CreateDeal(HubSpotClient):
         self.make_batch_request(inputs)
 
 
-class CreateLineItem(HubSpotClient):
-    """Creates line items"""
-
-    @batched()
-    def process_requests(self, data_reader):
-        optional_cols = "association_id", "association_category", "association_type_id"
-        inputs = []
-
-        for row in data_reader:
-            if not set(row.keys()).issubset(optional_cols):
-                logging.warning(f"The association is not set, it will be write without, if you need, please add "
-                                f"[association_id, association_category, association_type_id] columns. {row}")
-            else:
-                associations = [{
-                    'to': {'id': str(row.pop('association_id'))},
-                    'types': [{
-                        'associationCategory': row.pop('association_category'),
-                        'associationTypeId': row.pop('association_type_id')
-                    }]
-                }]
-                inputs.append({"associations": associations, "properties": row})
-        self.make_batch_request(inputs)
-
-
 class CreateAssociatedObject(HubSpotClient):
     """Parent class to CRM objects with association - creates objects"""
 
@@ -425,6 +401,10 @@ class CreateCall(CreateAssociatedObject):
 
 class CreateCommunication(CreateAssociatedObject):
     """Creates communications"""
+
+
+class CreateLineItem(CreateAssociatedObject):
+    """Creates line items"""
 
 
 class CreateEmail(CreateAssociatedObject):
