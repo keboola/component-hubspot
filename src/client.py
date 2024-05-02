@@ -25,9 +25,9 @@ ERRORS_TABLE_COLUMNS = ['status', 'category', 'message', 'context']
 def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_interval=SLEEP_INTERVAL):
     def wrapper(func):
         @wraps(func)
-        def inner(self, data, *args, **kwargs):
+        def inner(self, data_reader, *args, **kwargs):
             data_batch = []
-            for i, record in enumerate(data, start=1):
+            for i, record in enumerate(data_reader, start=1):
                 data_batch.append(record)
                 if not i % batch_size:
                     func(self, data_batch, *args, **kwargs)
@@ -159,8 +159,8 @@ class CreateContact(HubSpotClient):
 class CreateContactList(HubSpotClient):
     """Creates a new contact list"""
 
-    def process_requests(self, data_in):
-        for row in data_in:
+    def process_requests(self, data_reader):
+        for row in data_reader:
             request_body = {
                 'name': str(row['name'])
             }
@@ -676,6 +676,40 @@ class RemoveTask(RemoveObject):
         return 'task'
 
 
+class AssociationCreate(HubSpotClient):
+    """Creates associations between objects in batches"""
+
+    def process_requests(self, data_reader):
+        inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
+
+        for line in inputs:
+
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
+                from_object_type=line.get("from_object_type"),
+                to_object_type=line.get("to_object_type"))
+
+            self.make_request(url=f'{self.base_url}{endpoint_path}',
+                              request_body={'inputs': [{'from': line['from_id'], 'to': line['to_id']}]},
+                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class AssociationRemove(HubSpotClient):
+    """Creates associations between objects in batches"""
+
+    def process_requests(self, data_reader):
+        inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
+
+        for line in inputs:
+
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
+                from_object_type=line.get("from_object_type"),
+                to_object_type=line.get("to_object_type"))
+
+            self.make_request(url=f'{self.base_url}{endpoint_path}',
+                              request_body={'inputs': [{'from': line['from_id'], 'to': [line['to_id']]}]},
+                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
 def test_credentials(token: str) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of token.
@@ -764,7 +798,9 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
         "postal_mail_remove": RemovePostalMail,
         "task_create": CreateTask,
         "task_update": UpdateTask,
-        "task_remove": RemoveTask
+        "task_remove": RemoveTask,
+        "association_create": AssociationCreate,
+        "association_remove": AssociationRemove
     }
 
     if endpoint in endpoints:
@@ -772,11 +808,11 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
-def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, token: str) -> None:
+def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, params: dict) -> None:
     """
     Main entrypoint to call.
     Args:
-        token: Private App Token for Hubspot API
+        params: Config parameters
         endpoint: Hubspot API endpoint
         data_reader: csv.DictReader object with data from input csv
         error_writer: csv.DictWriter object to log 207 status_code events
@@ -784,5 +820,5 @@ def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter
     Returns:
         None
     """
-    factory = get_factory(endpoint, token, error_writer)
-    factory.process_requests(data_reader)
+    factory = get_factory(endpoint, params.get("#private_app_token"), error_writer)
+    factory.process_requests(data_reader=data_reader)

@@ -263,6 +263,16 @@ ENDPOINT_MAPPING = {
         'endpoint': 'crm/v3/objects/tasks/batch/archive',
         'required_column': ['task_id'],
         'method': 'post'
+    },
+    'association_create': {
+        'endpoint': 'crm/v4/associations/{from_object_type}/{to_object_type}/batch/associate/default',
+        'required_column': ['from_id', 'to_id', 'from_object_type', 'to_object_type'],
+        'method': 'post'
+    },
+    'association_remove': {
+        'endpoint': 'crm/v4/associations/{from_object_type}/{to_object_type}/batch/archive',
+        'required_column': ['from_id', 'to_id', 'from_object_type', 'to_object_type'],
+        'method': 'post'
     }
 }
 

@@ -11,7 +11,8 @@
         "company",
         "list",
         "deal",
-        "custom_list"
+        "custom_list",
+        "association"
       ],
       "type": "string",
       "title": "Object",
@@ -22,7 +23,8 @@
           "Company",
           "Contact List",
           "Deal",
-          "Custom List"
+          "Custom List",
+          "Association"
         ]
       }
     },
@@ -361,6 +363,24 @@
         "enum_titles": [
           "Create",
           "Update",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "association_action": {
+      "enum": [
+        "create",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "association"
+        },
+        "enum_titles": [
+          "Create",
           "Remove"
         ]
       },

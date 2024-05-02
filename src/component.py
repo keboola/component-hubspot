@@ -20,7 +20,7 @@ REQUIRED_PARAMETERS = [
     KEY_OBJECT
 ]
 HUBSPOT_OBJECTS = ("contact", "company", "list", "deal", "ticket", "product", "quote", "line_item", "tax", "call",
-                   "communication", "email", "meeting", "note", "postal_mail", "task", "custom_list")
+                   "communication", "email", "meeting", "note", "postal_mail", "task", "custom_list", "association")
 
 
 def coalesce(*arg):
@@ -31,14 +31,12 @@ class Component(ComponentBase):
     def __init__(self):
         super().__init__()
 
-        self.token = None
         self.params = self.configuration.parameters
 
     def run(self):
         """
         Main execution code
         """
-        self.token = self.params["#private_app_token"]
         authentication_type = self.params.get("authentication_type", "Private App Token")
 
         if authentication_type != "Private App Token":
@@ -50,7 +48,7 @@ class Component(ComponentBase):
 
         # Input checks
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
-        hubspot_client.test_credentials(self.token)
+        hubspot_client.test_credentials(self.params["#private_app_token"])
         self.validate_user_input(input_table)
 
         output_table = self.create_out_table_definition('errors.csv', write_always=True)
@@ -62,7 +60,7 @@ class Component(ComponentBase):
             error_writer = csv.DictWriter(output_file, fieldnames=hubspot_client.ERRORS_TABLE_COLUMNS)
             error_writer.writeheader()
             error_writer.errors = False
-            hubspot_client.run(self.endpoint, reader, error_writer, self.token)
+            hubspot_client.run(self.endpoint, reader, error_writer, self.params)
 
             if error_writer.errors:
                 self.write_manifest(output_table)
