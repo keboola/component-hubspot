@@ -185,7 +185,8 @@ class AddSecondaryEmail(HubSpotClient):
     def process_requests(self, data_reader):
         for row in data_reader:
             self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}{row["vid"]}/email/{row["secondary_email"]}',
+                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}'
+                    f'{row["vid"]}/email/{row["secondary_email"]}',
                 request_body=None,
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
@@ -211,7 +212,8 @@ class RemoveSecondaryEmail(HubSpotClient):
     def process_requests(self, data_reader):
         for row in data_reader:
             self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}{row["vid"]}/email/{row["secondary_email"]}',
+                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}'
+                    f'{row["vid"]}/email/{row["secondary_email"]}',
                 request_body=None,
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
