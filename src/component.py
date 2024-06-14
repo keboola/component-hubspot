@@ -46,7 +46,7 @@ class Component(ComponentBase):
         # Input tables
         in_tables = self.get_input_tables_definitions()
 
-        if len(in_tables) > 0:
+        if len(in_tables) < 1:
             raise UserException("No input table!")
 
         input_table = in_tables[0]
