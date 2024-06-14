@@ -78,7 +78,7 @@ class HubSpotClient(ABC):
                              total=5,
                              backoff_factor=0.3,  # {backoff factor} * (2 ** ({number of total retries} - 1))
                              status_forcelist=[429, 500, 502, 503, 504, 521, 524],
-                             allowed_methods=frozenset(['POST', 'PUT', 'DELETE']))))
+                             allowed_methods=frozenset(['POST', 'PUT', 'DELETE', 'PATCH']))))
 
     @abstractmethod
     def process_requests(self, data_reader) -> None:
@@ -176,6 +176,45 @@ class CreateContactList(HubSpotClient):
             self.make_request(
                 url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
                 request_body=request_body,
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class AddSecondaryEmail(HubSpotClient):
+    """Adds a secondary email to a contact"""
+
+    def process_requests(self, data_reader):
+        for row in data_reader:
+            self.make_request(
+                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}'
+                    f'{row["vid"]}/email/{row["secondary_email"]}',
+                request_body=None,
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class UpdateSecondaryEmail(HubSpotClient):
+    """Updates a secondary email of a contact"""
+
+    def process_requests(self, data_reader):
+        for row in data_reader:
+            request_body = {
+                "targetSecondaryEmail": row["secondary_email_old"],
+                "updatedSecondaryEmail": row["secondary_email"]
+            }
+            self.make_request(
+                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}{row["vid"]}',
+                request_body=request_body,
+                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
+class RemoveSecondaryEmail(HubSpotClient):
+    """Removes a secondary email from a contact"""
+
+    def process_requests(self, data_reader):
+        for row in data_reader:
+            self.make_request(
+                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}'
+                    f'{row["vid"]}/email/{row["secondary_email"]}',
+                request_body=None,
                 method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
@@ -809,7 +848,10 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
         "task_update": UpdateTask,
         "task_remove": RemoveTask,
         "association_create": AssociationCreate,
-        "association_remove": AssociationRemove
+        "association_remove": AssociationRemove,
+        "secondary_email_add": AddSecondaryEmail,
+        "secondary_email_update": UpdateSecondaryEmail,
+        "secondary_email_remove": RemoveSecondaryEmail
     }
 
     if endpoint in endpoints:

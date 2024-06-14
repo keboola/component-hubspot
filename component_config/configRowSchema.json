@@ -13,7 +13,8 @@
         "deal",
         "custom_list",
         "line_item",
-        "association"
+        "association",
+        "secondary_email"
       ],
       "type": "string",
       "title": "Object",
@@ -26,7 +27,8 @@
           "Deal",
           "Custom List",
           "Line Item",
-          "Association"
+          "Association",
+          "Secondary Email"
         ]
       }
     },
@@ -383,6 +385,26 @@
         },
         "enum_titles": [
           "Create",
+          "Remove"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "secondary_email_action": {
+      "enum": [
+        "add",
+        "update",
+        "remove"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "secondary_email"
+        },
+        "enum_titles": [
+          "Add",
+          "Update",
           "Remove"
         ]
       },

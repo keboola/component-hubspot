@@ -274,6 +274,21 @@ ENDPOINT_MAPPING = {
         'endpoint': 'crm/v4/associations/{from_object_type}/{to_object_type}/batch/archive',
         'required_column': ['from_id', 'to_id', 'from_object_type', 'to_object_type'],
         'method': 'post'
+    },
+    'secondary_email_add': {
+        'endpoint': 'contacts/v1/secondary-email/',
+        'required_column': ['vid', 'secondary_email'],
+        'method': 'put'
+    },
+    'secondary_email_update': {
+        'endpoint': 'contacts/v1/secondary-email/',
+        'required_column': ['vid', 'secondary_email_old', 'secondary_email'],
+        'method': 'patch'
+    },
+    'secondary_email_remove': {
+        'endpoint': 'contacts/v1/secondary-email/',
+        'required_column': ['vid', 'secondary_email'],
+        'method': 'delete'
     }
 }
 
