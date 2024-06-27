@@ -107,7 +107,7 @@ class HubSpotClient(ABC):
             error_row = {
                 'status': response.status_code,
                 'category': 'unknown',
-                'message': str(e)
+                'message': f" Response: {response.text}  Exception: {str(e)}",
             }
         self.error_writer.writerow(error_row)
 
