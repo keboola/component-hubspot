@@ -104,10 +104,17 @@ class HubSpotClient(ABC):
                 for field in ERRORS_TABLE_COLUMNS
             }
         except Exception as e:
+            request = {
+                'method': response.request.method,
+                'url': response.request.url,
+                'headers': dict(response.request.headers),
+                'body': response.request.body.decode('utf-8') if response.request.body else None
+            }
+
             error_row = {
                 'status': response.status_code,
                 'category': 'unknown',
-                'message': f" Response: {response.text}  Exception: {str(e)}",
+                'message': f" Response: {response.text}  Exception: {str(e)}  Request: {request}",
             }
         self.error_writer.writerow(error_row)
 
