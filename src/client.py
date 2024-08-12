@@ -77,7 +77,7 @@ class HubSpotClient(ABC):
                          max_retries=Retry(
                              total=5,
                              backoff_factor=0.3,  # {backoff factor} * (2 ** ({number of total retries} - 1))
-                             status_forcelist=[429, 500, 502, 503, 504, 521, 524],
+                             status_forcelist=[429, 500, 502, 503, 504, 520, 521, 524],
                              allowed_methods=frozenset(['POST', 'PUT', 'DELETE', 'PATCH']))))
 
     @abstractmethod
@@ -99,10 +99,7 @@ class HubSpotClient(ABC):
         self.error_writer.errors = True
         try:
             error = response.json()
-            error_row = {
-                field: error.get(field)
-                for field in ERRORS_TABLE_COLUMNS
-            }
+            error_row = {field: error.get(field) for field in ERRORS_TABLE_COLUMNS}
         except Exception as e:
             request = {
                 'method': response.request.method,
