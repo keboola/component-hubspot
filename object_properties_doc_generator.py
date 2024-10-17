@@ -20,7 +20,7 @@ def get_properties(hubspot_object):
 
 # create markdown file with hubspot object name and his properties in one file
 def create_file(md):
-    filename = f'docs/objects_properties.md'
+    filename = 'docs/objects_properties.md'
     with open(filename, 'w+') as file:
         file.writelines(md)
 
