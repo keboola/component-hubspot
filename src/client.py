@@ -757,6 +757,7 @@ class AssociationRemove(HubSpotClient):
                               request_body={'inputs': [{'from': line['from_id'], 'to': [line['to_id']]}]},
                               method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
+
 class CreateCustomObject(HubSpotClient):
     """Creates custom objects"""
 
@@ -771,6 +772,7 @@ class CreateCustomObject(HubSpotClient):
             self.make_request(url=f'{self.base_url}{row_endpoint}',
                               request_body={"properties": properties},
                               method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
 
 def test_credentials(token: str) -> bool:
     """
