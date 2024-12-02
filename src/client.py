@@ -757,6 +757,20 @@ class AssociationRemove(HubSpotClient):
                               request_body={'inputs': [{'from': line['from_id'], 'to': [line['to_id']]}]},
                               method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
+class CreateCustomObject(HubSpotClient):
+    """Creates custom objects"""
+
+    def process_requests(self, data_reader):
+        for row in data_reader:
+            if not row["object_type"]:
+                raise UserException(f"The column object_type is empty. {row}")
+            row_endpoint = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
+                object_type=row.get("object_type")
+            )
+            properties = {k: str(v) for k, v in row.items()}
+            self.make_request(url=f'{self.base_url}{row_endpoint}',
+                              request_body={"properties": properties},
+                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 def test_credentials(token: str) -> bool:
     """
@@ -797,6 +811,7 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
         "contact_create": CreateContact,
         "list_create": CreateContactList,
         "custom_list_create": CreateCustomList,
+        "custom_object_create": CreateCustomObject,
         "contact_add_to_list": AddContactToList,
         "contact_remove_from_list": RemoveContactFromList,
         "contact_update": UpdateContact,

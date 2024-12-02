@@ -411,6 +411,22 @@
       "propertyOrder": 211,
       "title": "Object Action",
       "type": "string"
+    },
+    "custom_object_action": {
+      "enum": [
+        "create"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "custom_object"
+        },
+        "enum_titles": [
+          "Create"
+        ]
+      },
+      "propertyOrder": 211,
+      "title": "Object Action",
+      "type": "string"
     }
   }
 }
