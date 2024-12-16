@@ -15,7 +15,7 @@ ENDPOINT_MAPPING = {
         'method': 'post'
     },
     'custom_object_create': {
-        'endpoint': 'crm/v3/objects{object_type}',
+        'endpoint': 'crm/v3/objects/{object_type}',
         'required_column': ['object_type'],
         'method': 'post'
     },
