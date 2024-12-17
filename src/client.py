@@ -4,7 +4,6 @@ from functools import wraps
 import time
 from collections import defaultdict
 
-from IPython.core.oinspect import object_info
 from requests.models import Response
 from requests import Session, get
 from requests.adapters import HTTPAdapter
