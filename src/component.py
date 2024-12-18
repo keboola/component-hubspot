@@ -21,7 +21,7 @@ REQUIRED_PARAMETERS = [
 ]
 HUBSPOT_OBJECTS = ("contact", "company", "list", "deal", "ticket", "product", "quote", "line_item", "tax", "call",
                    "communication", "email", "meeting", "note", "postal_mail", "task", "custom_list", "association",
-                   "secondary_email")
+                   "secondary_email", "custom_object")
 
 
 def coalesce(*arg):
@@ -65,7 +65,7 @@ class Component(ComponentBase):
             error_writer = csv.DictWriter(output_file, fieldnames=hubspot_client.ERRORS_TABLE_COLUMNS)
             error_writer.writeheader()
             error_writer.errors = False
-            hubspot_client.run(self.endpoint, reader, error_writer, self.params)
+            hubspot_client.run(self.endpoint, reader, error_writer, self.params, input_table.name)
 
             if error_writer.errors:
                 self.write_manifest(output_table)
@@ -100,7 +100,7 @@ class Component(ComponentBase):
         # 2 - Ensure all required columns are in the input files for the respective endpoint.
         # Comparing this information with the file's manifest
         required_columns = ENDPOINT_MAPPING[self.endpoint]["required_column"]
-        table_columns = table.columns
+        table_columns = table.column_names
         missing_columns = [column for column in required_columns if column not in table_columns]
 
         if missing_columns:

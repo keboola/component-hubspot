@@ -14,7 +14,8 @@
         "custom_list",
         "line_item",
         "association",
-        "secondary_email"
+        "secondary_email",
+        "custom_object"
       ],
       "type": "string",
       "title": "Object",
@@ -28,7 +29,8 @@
           "Custom List",
           "Line Item",
           "Association",
-          "Secondary Email"
+          "Secondary Email",
+          "Custom Object"
         ]
       }
     },
@@ -411,6 +413,34 @@
       "propertyOrder": 211,
       "title": "Object Action",
       "type": "string"
+    },
+    "custom_object_action": {
+      "enum": [
+        "create"
+      ],
+      "options": {
+        "dependencies": {
+          "hubspot_object": "custom_object"
+        },
+        "enum_titles": [
+          "Create"
+        ]
+      },
+      "propertyOrder": 212,
+      "title": "Object Action",
+      "type": "string"
+    },
+    "custom_object_use_table_as_type": {
+      "format": "checkbox",
+       "default": false,
+      "options": {
+        "dependencies": {
+          "hubspot_object": "custom_object"
+        }
+      },
+      "propertyOrder": 213,
+      "title": "Use table name as custom object type",
+      "type": "boolean"
     }
   }
 }

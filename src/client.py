@@ -63,13 +63,15 @@ def get_vids_from_rows(rows):
 class HubSpotClient(ABC):
     """Template for classes handling communication with Hubspot API"""
 
-    def __init__(self, endpoint: str, token: str, error_writer: csv.DictWriter):
+    def __init__(self, endpoint: str, config_params: dict, error_writer: csv.DictWriter, table_name: str):
         # Base parameters for the requests
         self.base_url = 'https://api.hubapi.com/'
         self.endpoint = endpoint
         self.base_params = {}
-        self.base_headers = {'Authorization': f'Bearer {token}'}
+        self.config_params = config_params
+        self.base_headers = {'Authorization': f'Bearer {self.config_params.get("#private_app_token")}'}
         self.error_writer = error_writer
+        self.table_name = table_name
 
         self.s = Session()
         self.s.mount('https://',
@@ -758,6 +760,29 @@ class AssociationRemove(HubSpotClient):
                               method=ENDPOINT_MAPPING[self.endpoint]["method"])
 
 
+class CreateCustomObject(HubSpotClient):
+    """Creates custom objects"""
+
+    def process_requests(self, data_reader):
+        for row in data_reader:
+            if self.config_params.get("custom_object_use_table_as_type", False):
+                object_type = self.table_name
+            else:
+                if "object_type" not in row:
+                    raise UserException(f"Object_type column is missing in the input table. {row}")
+                if not row["object_type"]:
+                    raise UserException(f"Cannot process list with empty records in [object_type] column. {row}")
+                object_type = row["object_type"]
+
+            row_endpoint = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
+                object_type=object_type
+            )
+            properties = {k: str(v) for k, v in row.items() if k != "object_type"}
+            self.make_request(url=f'{self.base_url}{row_endpoint}',
+                              request_body={"properties": properties},
+                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
+
+
 def test_credentials(token: str) -> bool:
     """
     Uses 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent' endpoint to check the validity of token.
@@ -784,19 +809,21 @@ def test_credentials(token: str) -> bool:
     return True
 
 
-def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubSpotClient:
+def get_factory(endpoint: str, config_params: dict, error_writer: csv.DictWriter, table_name: str) -> HubSpotClient:
     """Constructs an exporter factory based on endpoint selection
 
     Args:
         endpoint: Hubspot API endpoint set in config.json
-        token: Private App Token for Hubspot API
+        config_params: Parameters from config.json
         error_writer: csv.DictWriter for request errors
+        table_name: name of the input table
     """
 
     endpoints = {
         "contact_create": CreateContact,
         "list_create": CreateContactList,
         "custom_list_create": CreateCustomList,
+        "custom_object_create": CreateCustomObject,
         "contact_add_to_list": AddContactToList,
         "contact_remove_from_list": RemoveContactFromList,
         "contact_update": UpdateContact,
@@ -855,21 +882,23 @@ def get_factory(endpoint: str, token: str, error_writer: csv.DictWriter) -> HubS
     }
 
     if endpoint in endpoints:
-        return endpoints[endpoint](endpoint, token, error_writer)
+        return endpoints[endpoint](endpoint, config_params, error_writer, table_name)
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
-def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, params: dict) -> None:
+def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, config_params: dict,
+        input_table_name) -> None:
     """
     Main entrypoint to call.
     Args:
-        params: Config parameters
+        config_params: Config parameters
         endpoint: Hubspot API endpoint
         data_reader: csv.DictReader object with data from input csv
         error_writer: csv.DictWriter object to log 207 status_code events
+        input_table_name: name of the input table
 
     Returns:
         None
     """
-    factory = get_factory(endpoint, params.get("#private_app_token"), error_writer)
+    factory = get_factory(endpoint, config_params, error_writer, input_table_name)
     factory.process_requests(data_reader=data_reader)

@@ -14,6 +14,11 @@ ENDPOINT_MAPPING = {
         'required_column': ['name', 'object_type'],
         'method': 'post'
     },
+    'custom_object_create': {
+        'endpoint': 'crm/v3/objects/{object_type}',
+        'required_column': [],
+        'method': 'post'
+    },
     'contact_add_to_list': {
         'endpoint': 'contacts/v1/lists/{list_id}/add',
         'required_column': ['list_id', 'vids', 'emails'],
