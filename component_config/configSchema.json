@@ -7,14 +7,7 @@
          "title": "Private App Token",
          "description": "Your private app token. More info <a href=\"https://developers.hubspot.com/docs/api/migrate-an-api-key-integration-to-a-private-app\">here</a>",
          "format": "password",
-         "propertyOrder": 200,
-         "options": {
-            "dependencies": {
-               "authentication_type": [
-                  "Private App Token"
-               ]
-            }
-         }
+         "propertyOrder": 200
       }
    }
 }
