@@ -1,25 +1,24 @@
-from abc import ABC, abstractmethod
 import csv
-from functools import wraps
+import logging
 import time
+from abc import ABC, abstractmethod
 from collections import defaultdict
+from functools import wraps
+from typing import Literal
 
-from requests.models import Response
 from requests import Session, get
 from requests.adapters import HTTPAdapter
+from requests.exceptions import HTTPError, RequestException
+from requests.models import Response
 from urllib3.util import Retry
-from requests.exceptions import RequestException, HTTPError
 
-from exceptions import UserException
 from endpoint_mapping import ENDPOINT_MAPPING
-from typing import Literal, Union
-
-import logging
+from exceptions import UserException
 
 BATCH_SIZE = 100
 LOGGING_INTERVAL = 200
 SLEEP_INTERVAL = 0.1  # https://developers.hubspot.com/docs/api/usage-details#rate-limits
-ERRORS_TABLE_COLUMNS = ['status', 'category', 'message', 'context']
+ERRORS_TABLE_COLUMNS = ["status", "category", "message", "context"]
 
 
 def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_interval=SLEEP_INTERVAL):
@@ -33,7 +32,7 @@ def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_inte
                     func(self, data_batch, *args, **kwargs)
                     data_batch = []
                 if not i % logging_interval:
-                    logging.info(f'Processed {i} rows.')
+                    logging.info(f"Processed {i} rows.")
             if data_batch:
                 func(self, data_batch, *args, **kwargs)
 
@@ -45,18 +44,18 @@ def batched(batch_size=BATCH_SIZE, logging_interval=LOGGING_INTERVAL, sleep_inte
 def get_rows_by_list_id(data_reader):
     rows_by_list_id = defaultdict(list)
     for row in data_reader:
-        if not row['list_id']:
-            raise UserException('Column [list_id] cannot be empty.')
-        rows_by_list_id[row['list_id']].append(row)
+        if not row["list_id"]:
+            raise UserException("Column [list_id] cannot be empty.")
+        rows_by_list_id[row["list_id"]].append(row)
     return rows_by_list_id
 
 
 def get_vids_from_rows(rows):
     vids = []
     for row in rows:
-        if not row['vids']:
+        if not row["vids"]:
             raise UserException(f"Cannot process list with empty records in [vids] column. {row}")
-        vids.append(row['vids'])
+        vids.append(row["vids"])
     return vids
 
 
@@ -65,22 +64,26 @@ class HubSpotClient(ABC):
 
     def __init__(self, endpoint: str, config_params: dict, error_writer: csv.DictWriter, table_name: str):
         # Base parameters for the requests
-        self.base_url = 'https://api.hubapi.com/'
+        self.base_url = "https://api.hubapi.com/"
         self.endpoint = endpoint
         self.base_params = {}
         self.config_params = config_params
-        self.base_headers = {'Authorization': f'Bearer {self.config_params.get("#private_app_token")}'}
+        self.base_headers = {"Authorization": f"Bearer {self.config_params.get('#private_app_token')}"}
         self.error_writer = error_writer
         self.table_name = table_name
 
         self.s = Session()
-        self.s.mount('https://',
-                     HTTPAdapter(
-                         max_retries=Retry(
-                             total=5,
-                             backoff_factor=0.3,  # {backoff factor} * (2 ** ({number of total retries} - 1))
-                             status_forcelist=[429, 500, 502, 503, 504, 521, 524],
-                             allowed_methods=frozenset(['POST', 'PUT', 'DELETE', 'PATCH']))))
+        self.s.mount(
+            "https://",
+            HTTPAdapter(
+                max_retries=Retry(
+                    total=5,
+                    backoff_factor=0.3,  # {backoff factor} * (2 ** ({number of total retries} - 1))
+                    status_forcelist=[429, 500, 502, 503, 504, 521, 524],
+                    allowed_methods=frozenset(["POST", "PUT", "DELETE", "PATCH"]),
+                )
+            ),
+        )
 
     @abstractmethod
     def process_requests(self, data_reader) -> None:
@@ -94,28 +97,29 @@ class HubSpotClient(ABC):
 
     def log_batch_errors(self, response):
         self.error_writer.errors = True
-        for error in response.json()['errors']:
+        for error in response.json()["errors"]:
             self.error_writer.writerow(error)
 
     def log_errors(self, response):
         self.error_writer.errors = True
         try:
             error = response.json()
-            error_row = {
-                field: error.get(field)
-                for field in ERRORS_TABLE_COLUMNS
-            }
+            error_row = {field: error.get(field) for field in ERRORS_TABLE_COLUMNS}
         except Exception as e:
             error_row = {
-                'status': response.status_code,
-                'category': 'unknown',
-                'message': f" Response: {response.text}  Exception: {str(e)}",
+                "status": response.status_code,
+                "category": "unknown",
+                "message": f" Response: {response.text}  Exception: {str(e)}",
             }
         self.error_writer.writerow(error_row)
 
-    def make_request(self, url: str, request_body: Union[dict, None],
-                     method: Literal["post", "put", "delete"],
-                     sleep_interval: Union[int, float] = SLEEP_INTERVAL) -> Response:
+    def make_request(
+        self,
+        url: str,
+        request_body: dict | None,
+        method: Literal["post", "put", "delete"],
+        sleep_interval: int | float = SLEEP_INTERVAL,
+    ) -> Response:
         """
         Makes Post/Put/Delete calls to target url.
         Args:
@@ -131,8 +135,7 @@ class HubSpotClient(ABC):
         if method not in ["post", "put", "delete", "patch"]:
             raise UserException(f"Method {method} not allowed.")
 
-        response = self.s.request(method, url, headers=self.base_headers,
-                                  params=self.base_params, json=request_body)
+        response = self.s.request(method, url, headers=self.base_headers, params=self.base_params, json=request_body)
         try:
             response.raise_for_status()
         except RequestException:
@@ -149,9 +152,9 @@ class HubSpotClient(ABC):
         Returns:
             None
         """
-        url = f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}'
+        url = f"{self.base_url}{ENDPOINT_MAPPING[self.endpoint]['endpoint']}"
         method = ENDPOINT_MAPPING[self.endpoint]["method"]
-        response = self.make_request(url=url, request_body={'inputs': inputs}, method=method)
+        response = self.make_request(url=url, request_body={"inputs": inputs}, method=method)
 
         if response.status_code == 207:
             logging.error(f"{method} request to {url} partially failed with status code 207")
@@ -172,13 +175,12 @@ class CreateContactList(HubSpotClient):
 
     def process_requests(self, data_reader):
         for row in data_reader:
-            request_body = {
-                'name': str(row['name'])
-            }
+            request_body = {"name": str(row["name"])}
             self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
+                url=f"{self.base_url}{ENDPOINT_MAPPING[self.endpoint]['endpoint']}",
                 request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class AddSecondaryEmail(HubSpotClient):
@@ -187,10 +189,11 @@ class AddSecondaryEmail(HubSpotClient):
     def process_requests(self, data_reader):
         for row in data_reader:
             self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}'
-                    f'{row["vid"]}/email/{row["secondary_email"]}',
+                url=f"{self.base_url}{ENDPOINT_MAPPING[self.endpoint]['endpoint']}"
+                f"{row['vid']}/email/{row['secondary_email']}",
                 request_body=None,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class UpdateSecondaryEmail(HubSpotClient):
@@ -200,12 +203,13 @@ class UpdateSecondaryEmail(HubSpotClient):
         for row in data_reader:
             request_body = {
                 "targetSecondaryEmail": row["secondary_email_old"],
-                "updatedSecondaryEmail": row["secondary_email"]
+                "updatedSecondaryEmail": row["secondary_email"],
             }
             self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}{row["vid"]}',
+                url=f"{self.base_url}{ENDPOINT_MAPPING[self.endpoint]['endpoint']}{row['vid']}",
                 request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class RemoveSecondaryEmail(HubSpotClient):
@@ -214,31 +218,29 @@ class RemoveSecondaryEmail(HubSpotClient):
     def process_requests(self, data_reader):
         for row in data_reader:
             self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}'
-                    f'{row["vid"]}/email/{row["secondary_email"]}',
+                url=f"{self.base_url}{ENDPOINT_MAPPING[self.endpoint]['endpoint']}"
+                f"{row['vid']}/email/{row['secondary_email']}",
                 request_body=None,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class CreateCustomList(HubSpotClient):
     """Creates list for custom objects specified in the input table via object_type column"""
 
     def process_requests(self, data_reader):
-        object_types_to_id = {
-            'contact': '0-1',
-            'company': '0-2',
-            'deal': '0-3'
-        }
+        object_types_to_id = {"contact": "0-1", "company": "0-2", "deal": "0-3"}
         for row in data_reader:
             request_body = {
-                'name': str(row['name']),
-                'processingType': 'MANUAL',
-                'objectTypeId': object_types_to_id[row['object_type']]
+                "name": str(row["name"]),
+                "processingType": "MANUAL",
+                "objectTypeId": object_types_to_id[row["object_type"]],
             }
             self.make_request(
-                url=f'{self.base_url}{ENDPOINT_MAPPING[self.endpoint]["endpoint"]}',
+                url=f"{self.base_url}{ENDPOINT_MAPPING[self.endpoint]['endpoint']}",
                 request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class AddContactToList(HubSpotClient):
@@ -256,11 +258,12 @@ class AddContactToList(HubSpotClient):
                 else:
                     emails.append(row["emails"])
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(list_id=list_id)
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]["endpoint"].format(list_id=list_id)
             self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
+                url=f"{self.base_url}{endpoint_path}",
                 request_body={"vids": vids, "emails": emails},
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class RemoveContactFromList(HubSpotClient):
@@ -272,11 +275,12 @@ class RemoveContactFromList(HubSpotClient):
         for list_id, rows in rows_by_list_id.items():
             vids = get_vids_from_rows(rows)
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(list_id=list_id)
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]["endpoint"].format(list_id=list_id)
             self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
-                request_body={'vids': vids},
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                url=f"{self.base_url}{endpoint_path}",
+                request_body={"vids": vids},
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class UpdateContact(HubSpotClient):
@@ -289,10 +293,7 @@ class UpdateContact(HubSpotClient):
             if not row["vid"]:
                 raise UserException(f"Cannot process list with empty records in [vid] column. {row}")
 
-            inputs.append({
-                "id": row.pop('vid'),
-                "properties": {k: str(v) for k, v in row.items()}
-            })
+            inputs.append({"id": row.pop("vid"), "properties": {k: str(v) for k, v in row.items()}})
         self.make_batch_request(inputs)
 
 
@@ -304,13 +305,14 @@ class UpdateContactByEmail(HubSpotClient):
             if not row["email"]:
                 raise UserException(f"Cannot process list with empty records in [email] column. {row}")
 
-            email = row.pop('email')
-            request_body = {'properties': [{'property': k, 'value': str(v)} for k, v in row.items()]}
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(email=email)
+            email = row.pop("email")
+            request_body = {"properties": [{"property": k, "value": str(v)} for k, v in row.items()]}
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]["endpoint"].format(email=email)
             self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
+                url=f"{self.base_url}{endpoint_path}",
                 request_body=request_body,
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class CreateCompany(HubSpotClient):
@@ -336,11 +338,12 @@ class AddObjectToList(HubSpotClient):
         for list_id, rows in rows_by_list_id.items():
             vids = get_vids_from_rows(rows)
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(list_id=list_id)
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]["endpoint"].format(list_id=list_id)
             self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
-                request_body={'recordIdsToAdd': vids},
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                url=f"{self.base_url}{endpoint_path}",
+                request_body={"recordIdsToAdd": vids},
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class AddCompanyToList(AddObjectToList):
@@ -360,11 +363,12 @@ class RemoveObjectFromList(HubSpotClient):
         for list_id, rows in rows_by_list_id.items():
             vids = get_vids_from_rows(rows)
 
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(list_id=list_id)
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]["endpoint"].format(list_id=list_id)
             self.make_request(
-                url=f'{self.base_url}{endpoint_path}',
-                request_body={'recordIdsToRemove': vids},
-                method=ENDPOINT_MAPPING[self.endpoint]["method"])
+                url=f"{self.base_url}{endpoint_path}",
+                request_body={"recordIdsToRemove": vids},
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class RemoveCompanyFromList(RemoveObjectFromList):
@@ -385,10 +389,7 @@ class UpdateCompany(HubSpotClient):
             if not row["company_id"]:
                 raise UserException(f"Cannot process list with empty records in [company_id] column. {row}")
 
-            inputs.append({
-                "id": row.pop("company_id"),
-                "properties": {k: str(v) for k, v in row.items()}
-            })
+            inputs.append({"id": row.pop("company_id"), "properties": {k: str(v) for k, v in row.items()}})
         self.make_batch_request(inputs)
 
 
@@ -416,13 +417,17 @@ class CreateAssociatedObject(HubSpotClient):
         for row in data_reader:
             if not row["association_id"]:
                 raise UserException(f"Cannot process object with empty record in [association_id] column. {row}")
-            associations = [{
-                'to': {'id': str(row.pop('association_id'))},
-                'types': [{
-                    'associationCategory': row.pop('association_category'),
-                    'associationTypeId': row.pop('association_type_id')
-                }]
-            }]
+            associations = [
+                {
+                    "to": {"id": str(row.pop("association_id"))},
+                    "types": [
+                        {
+                            "associationCategory": row.pop("association_category"),
+                            "associationTypeId": row.pop("association_type_id"),
+                        }
+                    ],
+                }
+            ]
             inputs.append({"associations": associations, "properties": row})
         self.make_batch_request(inputs)
 
@@ -488,13 +493,11 @@ class UpdateObject(HubSpotClient, ABC):
         inputs = []
         for row in data_reader:
             if not row[f"{self.object_type}_id"]:
-                raise UserException(f"Cannot process {self.object_type} with empty records "
-                                    f"in [{self.object_type}_id] column. {row}")
+                raise UserException(
+                    f"Cannot process {self.object_type} with empty records in [{self.object_type}_id] column. {row}"
+                )
 
-            inputs.append({
-                "id": str(row.pop(f'{self.object_type}_id')),
-                "properties": row
-            })
+            inputs.append({"id": str(row.pop(f"{self.object_type}_id")), "properties": row})
         self.make_batch_request(inputs)
 
 
@@ -503,7 +506,7 @@ class UpdateDeal(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'deal'
+        return "deal"
 
 
 class UpdateTicket(UpdateObject):
@@ -511,7 +514,7 @@ class UpdateTicket(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'ticket'
+        return "ticket"
 
 
 class UpdateProduct(UpdateObject):
@@ -519,7 +522,7 @@ class UpdateProduct(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'product'
+        return "product"
 
 
 class UpdateQuote(UpdateObject):
@@ -527,7 +530,7 @@ class UpdateQuote(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'quote'
+        return "quote"
 
 
 class UpdateLineItem(UpdateObject):
@@ -535,7 +538,7 @@ class UpdateLineItem(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'line_item'
+        return "line_item"
 
 
 class UpdateTax(UpdateObject):
@@ -543,7 +546,7 @@ class UpdateTax(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'tax'
+        return "tax"
 
 
 class UpdateCall(UpdateObject):
@@ -551,7 +554,7 @@ class UpdateCall(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'call'
+        return "call"
 
 
 class UpdateCommunication(UpdateObject):
@@ -559,7 +562,7 @@ class UpdateCommunication(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'communication'
+        return "communication"
 
 
 class UpdateEmail(UpdateObject):
@@ -567,7 +570,7 @@ class UpdateEmail(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'email'
+        return "email"
 
 
 class UpdateMeeting(UpdateObject):
@@ -575,7 +578,7 @@ class UpdateMeeting(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'meeting'
+        return "meeting"
 
 
 class UpdateNote(UpdateObject):
@@ -583,7 +586,7 @@ class UpdateNote(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'note'
+        return "note"
 
 
 class UpdatePostalMail(UpdateObject):
@@ -591,7 +594,7 @@ class UpdatePostalMail(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'postal_mail'
+        return "postal_mail"
 
 
 class UpdateTask(UpdateObject):
@@ -599,7 +602,7 @@ class UpdateTask(UpdateObject):
 
     @property
     def object_type(self) -> str:
-        return 'task'
+        return "task"
 
 
 class RemoveObject(HubSpotClient, ABC):
@@ -621,7 +624,7 @@ class RemoveCompany(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'company'
+        return "company"
 
 
 class RemoveDeal(RemoveObject):
@@ -629,7 +632,7 @@ class RemoveDeal(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'deal'
+        return "deal"
 
 
 class RemoveTicket(RemoveObject):
@@ -637,7 +640,7 @@ class RemoveTicket(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'ticket'
+        return "ticket"
 
 
 class RemoveProduct(RemoveObject):
@@ -645,7 +648,7 @@ class RemoveProduct(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'product'
+        return "product"
 
 
 class RemoveQuote(RemoveObject):
@@ -653,7 +656,7 @@ class RemoveQuote(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'quote'
+        return "quote"
 
 
 class RemoveLineItem(RemoveObject):
@@ -661,7 +664,7 @@ class RemoveLineItem(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'line_item'
+        return "line_item"
 
 
 class RemoveTax(RemoveObject):
@@ -669,7 +672,7 @@ class RemoveTax(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'tax'
+        return "tax"
 
 
 class RemoveCall(RemoveObject):
@@ -677,7 +680,7 @@ class RemoveCall(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'call'
+        return "call"
 
 
 class RemoveCommunication(RemoveObject):
@@ -685,7 +688,7 @@ class RemoveCommunication(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'communication'
+        return "communication"
 
 
 class RemoveEmail(RemoveObject):
@@ -693,7 +696,7 @@ class RemoveEmail(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'email'
+        return "email"
 
 
 class RemoveMeeting(RemoveObject):
@@ -701,7 +704,7 @@ class RemoveMeeting(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'meeting'
+        return "meeting"
 
 
 class RemoveNote(RemoveObject):
@@ -709,7 +712,7 @@ class RemoveNote(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'note'
+        return "note"
 
 
 class RemovePostalMail(RemoveObject):
@@ -717,7 +720,7 @@ class RemovePostalMail(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'postal_mail'
+        return "postal_mail"
 
 
 class RemoveTask(RemoveObject):
@@ -725,7 +728,7 @@ class RemoveTask(RemoveObject):
 
     @property
     def object_type(self) -> str:
-        return 'task'
+        return "task"
 
 
 class AssociationCreate(HubSpotClient):
@@ -735,13 +738,15 @@ class AssociationCreate(HubSpotClient):
         inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
 
         for line in inputs:
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
-                from_object_type=line.get("from_object_type"),
-                to_object_type=line.get("to_object_type"))
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]["endpoint"].format(
+                from_object_type=line.get("from_object_type"), to_object_type=line.get("to_object_type")
+            )
 
-            self.make_request(url=f'{self.base_url}{endpoint_path}',
-                              request_body={'inputs': [{'from': line['from_id'], 'to': line['to_id']}]},
-                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            self.make_request(
+                url=f"{self.base_url}{endpoint_path}",
+                request_body={"inputs": [{"from": line["from_id"], "to": line["to_id"]}]},
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class AssociationRemove(HubSpotClient):
@@ -751,13 +756,15 @@ class AssociationRemove(HubSpotClient):
         inputs = [{k: str(v) for k, v in row.items()} for row in data_reader]
 
         for line in inputs:
-            endpoint_path = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
-                from_object_type=line.get("from_object_type"),
-                to_object_type=line.get("to_object_type"))
+            endpoint_path = ENDPOINT_MAPPING[self.endpoint]["endpoint"].format(
+                from_object_type=line.get("from_object_type"), to_object_type=line.get("to_object_type")
+            )
 
-            self.make_request(url=f'{self.base_url}{endpoint_path}',
-                              request_body={'inputs': [{'from': line['from_id'], 'to': [line['to_id']]}]},
-                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            self.make_request(
+                url=f"{self.base_url}{endpoint_path}",
+                request_body={"inputs": [{"from": line["from_id"], "to": [line["to_id"]]}]},
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 class CreateCustomObject(HubSpotClient):
@@ -774,13 +781,13 @@ class CreateCustomObject(HubSpotClient):
                     raise UserException(f"Cannot process list with empty records in [object_type] column. {row}")
                 object_type = row["object_type"]
 
-            row_endpoint = ENDPOINT_MAPPING[self.endpoint]['endpoint'].format(
-                object_type=object_type
-            )
+            row_endpoint = ENDPOINT_MAPPING[self.endpoint]["endpoint"].format(object_type=object_type)
             properties = {k: str(v) for k, v in row.items() if k != "object_type"}
-            self.make_request(url=f'{self.base_url}{row_endpoint}',
-                              request_body={"properties": properties},
-                              method=ENDPOINT_MAPPING[self.endpoint]["method"])
+            self.make_request(
+                url=f"{self.base_url}{row_endpoint}",
+                request_body={"properties": properties},
+                method=ENDPOINT_MAPPING[self.endpoint]["method"],
+            )
 
 
 def test_credentials(token: str) -> bool:
@@ -792,17 +799,19 @@ def test_credentials(token: str) -> bool:
         UserException when auth fails.
     """
     # Authentication Check to ensure the API token is valid
-    auth_url = 'https://api.hubapi.com/contacts/v1/lists/all/contacts/recent'
-    auth_param = {'count': 1}
-    auth_headers = {'Authorization': f'Bearer {token}'}
+    auth_url = "https://api.hubapi.com/contacts/v1/lists/all/contacts/recent"
+    auth_param = {"count": 1}
+    auth_headers = {"Authorization": f"Bearer {token}"}
 
     try:
         auth_test = get(auth_url, params=auth_param, headers=auth_headers)
         auth_test.raise_for_status()
     except HTTPError as e:
-        raise UserException(f"Cannot reach Hubspot API, please check your credentials. "
-                            f"Error code: {auth_test.status_code}. "
-                            f"Message: {auth_test.json()['message']}") from e
+        raise UserException(
+            f"Cannot reach Hubspot API, please check your credentials. "
+            f"Error code: {auth_test.status_code}. "
+            f"Message: {auth_test.json()['message']}"
+        ) from e
 
     if auth_test.status_code not in (200, 201):
         raise UserException(f"Auth check was not successful. Error: {auth_test.json()}")
@@ -878,7 +887,7 @@ def get_factory(endpoint: str, config_params: dict, error_writer: csv.DictWriter
         "association_remove": AssociationRemove,
         "secondary_email_add": AddSecondaryEmail,
         "secondary_email_update": UpdateSecondaryEmail,
-        "secondary_email_remove": RemoveSecondaryEmail
+        "secondary_email_remove": RemoveSecondaryEmail,
     }
 
     if endpoint in endpoints:
@@ -886,8 +895,9 @@ def get_factory(endpoint: str, config_params: dict, error_writer: csv.DictWriter
     raise UserException(f"Unknown endpoint option: {endpoint}.")
 
 
-def run(endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, config_params: dict,
-        input_table_name) -> None:
+def run(
+    endpoint: str, data_reader: csv.DictReader, error_writer: csv.DictWriter, config_params: dict, input_table_name
+) -> None:
     """
     Main entrypoint to call.
     Args:

@@ -1,0 +1,37 @@
+[project]
+name = "wr-hubspot"
+version = "0.1.0"
+description = "Keboola HubSpot Writer Component"
+requires-python = "~=3.13.0"
+dependencies = [
+    "keboola-component>=1.6.8",
+    "requests>=2.28.1",
+    "urllib3>=1.26.11",
+]
+
+[dependency-groups]
+dev = [
+    "freezegun>=1.5.5",
+    "mock>=4.0.3",
+    "pre-commit>=4.6.0",
+    "pytest>=9.0.3",
+    "ruff>=0.15.14",
+    "ty>=0.0.40",
+]
+
+[tool.ruff]
+line-length = 120
+exclude = ["example/"]
+
+[tool.ruff.lint]
+extend-select = [
+    "I",   # isort – import sorting
+    "UP",  # pyupgrade – modern Python syntax
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ty.environment]
+extra-paths = ["src"]
