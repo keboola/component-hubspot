@@ -1,0 +1,1 @@
+https://github.com/keboola/component-hubspot/blob/master/README.md
