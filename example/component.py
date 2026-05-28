@@ -1,7 +1,7 @@
-'''
+"""
 Template Component main class.
 
-'''
+"""
 
 import logging
 import os
@@ -10,45 +10,45 @@ from datetime import datetime
 from pathlib import Path
 
 from kbc.env_handler import KBCEnvHandler
-from kbc.result import KBCTableDef
-from kbc.result import ResultWriter
+from kbc.result import KBCTableDef, ResultWriter
 
 # global constants'
-SUPPORTED_ENDPOINTS = ['companies', 'deals']
+SUPPORTED_ENDPOINTS = ["companies", "deals"]
 
 # configuration variables
-KEY_API_TOKEN = '#api_token'
-KEY_PERIOD_FROM = 'period_from'
-KEY_ENDPOINTS = 'endpoints'
+KEY_API_TOKEN = "#api_token"
+KEY_PERIOD_FROM = "period_from"
+KEY_ENDPOINTS = "endpoints"
 
-KEY_COMPANY_PROPERTIES = 'company_properties'
-KEY_DEAL_PROPERTIES = 'deal_properties'
+KEY_COMPANY_PROPERTIES = "company_properties"
+KEY_DEAL_PROPERTIES = "deal_properties"
 
 # #### Keep for debug
-KEY_STDLOG = 'stdlogging'
-KEY_DEBUG = 'debug'
+KEY_STDLOG = "stdlogging"
+KEY_DEBUG = "debug"
 MANDATORY_PARS = [KEY_ENDPOINTS, KEY_API_TOKEN]
 MANDATORY_IMAGE_PARS = []
 
 # for easier local project setup
-DEFAULT_DATA_DIR = Path(__file__).resolve().parent.parent.joinpath('data').as_posix() \
-    if not os.environ.get('KBC_DATADIR') else None
+DEFAULT_DATA_DIR = (
+    Path(__file__).resolve().parent.parent.joinpath("data").as_posix() if not os.environ.get("KBC_DATADIR") else None
+)
 
-APP_VERSION = '0.0.1'
+APP_VERSION = "0.0.1"
 
 
 class Component(KBCEnvHandler):
-
     def __init__(self, debug=False):
-        KBCEnvHandler.__init__(self, MANDATORY_PARS, log_level=logging.DEBUG if debug else logging.INFO,
-                               data_path=DEFAULT_DATA_DIR)
+        KBCEnvHandler.__init__(
+            self, MANDATORY_PARS, log_level=logging.DEBUG if debug else logging.INFO, data_path=DEFAULT_DATA_DIR
+        )
         # override debug from config
         if self.cfg_params.get(KEY_DEBUG):
             debug = True
         if debug:
             logging.getLogger().setLevel(logging.DEBUG)
-        logging.info('Running version %s', APP_VERSION)
-        logging.info('Loading configuration...')
+        logging.info("Running version %s", APP_VERSION)
+        logging.info("Loading configuration...")
 
         try:
             self.validate_config()
@@ -63,15 +63,16 @@ class Component(KBCEnvHandler):
         # ####### EXAMPLE TO REMOVE END
 
     def run(self):
-        '''
+        """
         Main execution code
-        '''
+        """
         params = self.cfg_params  # noqa
 
         # ####### EXAMPLE TO REMOVE
         if params.get(KEY_PERIOD_FROM):
-            start_date, end_date = self.get_date_period_converted(params.get(KEY_PERIOD_FROM),
-                                                                  datetime.utcnow().strftime('%Y-%m-%d'))
+            start_date, end_date = self.get_date_period_converted(
+                params.get(KEY_PERIOD_FROM), datetime.utcnow().strftime("%Y-%m-%d")
+            )
             recent = True
         else:
             start_date = None
@@ -79,11 +80,11 @@ class Component(KBCEnvHandler):
 
         endpoints = params.get(KEY_ENDPOINTS, SUPPORTED_ENDPOINTS)
 
-        if 'companies' in endpoints:
-            logging.info('Extracting Companies')
+        if "companies" in endpoints:
+            logging.info("Extracting Companies")
             self.extract_companies(recent)
 
-        if 'deals' in endpoints:
+        if "deals" in endpoints:
             logging.info("Extracting deals")
             self.extract_deals(start_date)
 
@@ -92,12 +93,13 @@ class Component(KBCEnvHandler):
 
     # ####### EXAMPLE TO REMOVE (ALL BELOW UNTIL END MARKER)
     def extract_deals(self, start_time):
-        logging.info('Extracting Companies from HubSpot CRM')
+        logging.info("Extracting Companies from HubSpot CRM")
         fields = self._parse_props(self.cfg_params.get(KEY_DEAL_PROPERTIES))
 
         if not fields:
             expected_deal_cols = hs_client.DEAL_DEFAULT_COLS + self._build_property_cols(
-                hs_client.DEAL_DEFAULT_PROPERTIES)
+                hs_client.DEAL_DEFAULT_PROPERTIES
+            )
         else:
             expected_deal_cols = hs_client.DEAL_DEFAULT_COLS + self._build_property_cols(fields)
 
@@ -109,11 +111,12 @@ class Component(KBCEnvHandler):
         fields = self._parse_props(self.cfg_params.get(KEY_COMPANY_PROPERTIES))
         if not fields:
             expected_company_cols = hs_client.COMPANIES_DEFAULT_COLS + self._build_property_cols(
-                hs_client.COMPANY_DEFAULT_PROPERTIES)
+                hs_client.COMPANY_DEFAULT_PROPERTIES
+            )
         else:
             expected_company_cols = hs_client.COMPANIES_DEFAULT_COLS + self._build_property_cols(fields)
         # table def
-        companies_table = KBCTableDef(name='companies', columns=expected_company_cols, pk=hs_result.COMPANY_PK)
+        companies_table = KBCTableDef(name="companies", columns=expected_company_cols, pk=hs_result.COMPANY_PK)
         # writer setup
         comp_writer = ResultWriter(result_dir_path=self.tables_out_path, table_def=companies_table, fix_headers=True)
         self._get_n_process_results(self.hs_client.get_companies, comp_writer, recent, fields)
@@ -132,12 +135,12 @@ class Component(KBCEnvHandler):
 
     def _get_n_process_results(self, ds_getter, writer, *fpars):
         """
-               Generic method to get simple objects
-               :param ds_getter: dataset method to call
-               :param writer: result writer instance
-               :param *fpars: positional arguments for the ds_getter function.
-               :return:
-               """
+        Generic method to get simple objects
+        :param ds_getter: dataset method to call
+        :param writer: result writer instance
+        :param *fpars: positional arguments for the ds_getter function.
+        :return:
+        """
         with writer:
             for res in ds_getter(*fpars):
                 if isinstance(res, list):
@@ -153,11 +156,11 @@ class Component(KBCEnvHandler):
         # get flattened property cols
         prop_cols = []
         for p in properties:
-            prop_cols.append('properties.' + p + '.source')
-            prop_cols.append('properties.' + p + '.sourceId')
-            prop_cols.append('properties.' + p + '.timestamp')
-            prop_cols.append('properties.' + p + '.value')
-            prop_cols.append('properties.' + p + '.versions')
+            prop_cols.append("properties." + p + ".source")
+            prop_cols.append("properties." + p + ".sourceId")
+            prop_cols.append("properties." + p + ".timestamp")
+            prop_cols.append("properties." + p + ".value")
+            prop_cols.append("properties." + p + ".versions")
         return prop_cols
 
 

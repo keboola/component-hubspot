@@ -1,6 +1,7 @@
 """
 Hubspot Writer
 """
+
 import csv
 import logging
 
@@ -12,16 +13,33 @@ from endpoint_mapping import ENDPOINT_MAPPING, LEGACY_ENDPOINT_MAPPING_CONVERSIO
 from exceptions import UserException
 
 # configuration variables
-KEY_OBJECT = 'hubspot_object'
+KEY_OBJECT = "hubspot_object"
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
-REQUIRED_PARAMETERS = [
-    KEY_OBJECT
-]
-HUBSPOT_OBJECTS = ("contact", "company", "list", "deal", "ticket", "product", "quote", "line_item", "tax", "call",
-                   "communication", "email", "meeting", "note", "postal_mail", "task", "custom_list", "association",
-                   "secondary_email", "custom_object")
+REQUIRED_PARAMETERS = [KEY_OBJECT]
+HUBSPOT_OBJECTS = (
+    "contact",
+    "company",
+    "list",
+    "deal",
+    "ticket",
+    "product",
+    "quote",
+    "line_item",
+    "tax",
+    "call",
+    "communication",
+    "email",
+    "meeting",
+    "note",
+    "postal_mail",
+    "task",
+    "custom_list",
+    "association",
+    "secondary_email",
+    "custom_object",
+)
 
 
 def coalesce(*arg):
@@ -56,11 +74,11 @@ class Component(ComponentBase):
         hubspot_client.test_credentials(self.params["#private_app_token"])
         self.validate_user_input(input_table)
 
-        output_table = self.create_out_table_definition('errors.csv', write_always=True)
+        output_table = self.create_out_table_definition("errors.csv", write_always=True)
 
         logging.info(f"Processing input table: {input_table.name}")
 
-        with open(input_table.full_path) as input_file, open(output_table.full_path, 'w', newline='') as output_file:
+        with open(input_table.full_path) as input_file, open(output_table.full_path, "w", newline="") as output_file:
             reader = csv.DictReader(input_file)
             error_writer = csv.DictWriter(output_file, fieldnames=hubspot_client.ERRORS_TABLE_COLUMNS)
             error_writer.writeheader()
@@ -70,7 +88,8 @@ class Component(ComponentBase):
             if error_writer.errors:
                 self.write_manifest(output_table)
                 raise UserException(
-                    'There were errors during some requests handling - check errors.csv for more details.')
+                    "There were errors during some requests handling - check errors.csv for more details."
+                )
 
     @property
     def hubspot_object(self) -> str:
