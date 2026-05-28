@@ -14,6 +14,7 @@ jobs:
     with:
       app_id: "kds-team.wr-hubspot"
       vendor: "kds-team"
+      kbc_developerportal_username: "kds-team+github"
       test_build_target: "test"
       docker_build_target: "production"
     secrets: inherit
