@@ -7,6 +7,7 @@
   "properties": {
     "hubspot_object": {
       "enum": [
+        "",
         "contact",
         "company",
         "list",
@@ -22,6 +23,7 @@
       "propertyOrder": 200,
       "options": {
         "enum_titles": [
+          "",
           "Contact",
           "Company",
           "Contact List",
@@ -36,6 +38,7 @@
     },
     "contact_action": {
       "enum": [
+        "",
         "create",
         "add_to_list",
         "update",
@@ -47,6 +50,7 @@
       "propertyOrder": 210,
       "options": {
         "enum_titles": [
+          "",
           "Create ",
           "Add to List",
           "Update",
@@ -60,6 +64,7 @@
     },
     "company_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove",
@@ -71,6 +76,7 @@
       "propertyOrder": 211,
       "options": {
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove",
@@ -84,6 +90,7 @@
     },
     "list_action": {
       "enum": [
+        "",
         "create"
       ],
       "type": "string",
@@ -91,6 +98,7 @@
       "propertyOrder": 212,
       "options": {
         "enum_titles": [
+          "",
           "Create"
         ],
         "dependencies": {
@@ -100,6 +108,7 @@
     },
     "custom_list_action": {
       "enum": [
+        "",
         "create"
       ],
       "type": "string",
@@ -107,6 +116,7 @@
       "propertyOrder": 211,
       "options": {
         "enum_titles": [
+          "",
           "Create"
         ],
         "dependencies": {
@@ -116,6 +126,7 @@
     },
     "deal_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove",
@@ -126,6 +137,7 @@
       "propertyOrder": 211,
       "options": {
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove",
@@ -138,6 +150,7 @@
     },
     "call_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -147,6 +160,7 @@
           "hubspot_object": "call"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -158,6 +172,7 @@
     },
     "communication_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -167,6 +182,7 @@
           "hubspot_object": "communication"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -178,6 +194,7 @@
     },
     "email_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -187,6 +204,7 @@
           "hubspot_object": "email"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -198,6 +216,7 @@
     },
     "line_item_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -207,6 +226,7 @@
           "hubspot_object": "line_item"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -218,6 +238,7 @@
     },
     "meeting_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -227,6 +248,7 @@
           "hubspot_object": "meeting"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -238,6 +260,7 @@
     },
     "note_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -247,6 +270,7 @@
           "hubspot_object": "note"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -258,6 +282,7 @@
     },
     "postal_mail_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -267,6 +292,7 @@
           "hubspot_object": "postal_mail"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -278,6 +304,7 @@
     },
     "product_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -287,6 +314,7 @@
           "hubspot_object": "product"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -298,6 +326,7 @@
     },
     "quote_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -307,6 +336,7 @@
           "hubspot_object": "quote"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -318,6 +348,7 @@
     },
     "task_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -327,6 +358,7 @@
           "hubspot_object": "task"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -338,6 +370,7 @@
     },
     "tax_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -347,6 +380,7 @@
           "hubspot_object": "tax"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -358,6 +392,7 @@
     },
     "ticket_action": {
       "enum": [
+        "",
         "create",
         "update",
         "remove"
@@ -367,6 +402,7 @@
           "hubspot_object": "ticket"
         },
         "enum_titles": [
+          "",
           "Create",
           "Update",
           "Remove"
@@ -378,6 +414,7 @@
     },
     "association_action": {
       "enum": [
+        "",
         "create",
         "remove"
       ],
@@ -386,6 +423,7 @@
           "hubspot_object": "association"
         },
         "enum_titles": [
+          "",
           "Create",
           "Remove"
         ]
@@ -396,6 +434,7 @@
     },
     "secondary_email_action": {
       "enum": [
+        "",
         "add",
         "update",
         "remove"
@@ -405,6 +444,7 @@
           "hubspot_object": "secondary_email"
         },
         "enum_titles": [
+          "",
           "Add",
           "Update",
           "Remove"
@@ -416,6 +456,7 @@
     },
     "custom_object_action": {
       "enum": [
+        "",
         "create"
       ],
       "options": {
@@ -423,6 +464,7 @@
           "hubspot_object": "custom_object"
         },
         "enum_titles": [
+          "",
           "Create"
         ]
       },
