@@ -19,6 +19,7 @@
       ],
       "type": "string",
       "title": "Object",
+      "default": "",
       "propertyOrder": 200,
       "options": {
         "enum_titles": [
