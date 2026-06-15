@@ -1,1 +1,1 @@
-The HubSpot CRM helps companies grow traffic, convert leads, get insights to close more deals, etc
+Writes data to HubSpot CRM.
